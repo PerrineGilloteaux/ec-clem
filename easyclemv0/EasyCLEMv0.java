@@ -29,6 +29,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -954,6 +955,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 			XMLUtil.setAttributeIntValue(transfoElement, "nz", target.getValue().getSizeZ());
 			
 		}
+		if (!XMLFile.exists())
+			try {
+				XMLFile.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		XMLUtil.saveDocument(myXMLdoc, XMLFile);
 		System.out.println("Transformation will be saved as " + XMLFile.getPath());
 
@@ -1701,6 +1709,22 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		try {
 			choiceinputsection.setEnabled(true);
 			rigidspecificbutton.reshowspecificrigidbutton();
+			
+			// Display the Total Final Transformation For Information
+			Document document = XMLUtil.loadDocument(XMLFile);
+			if ((mode3D==false)&&(nonrigid==false)){
+			Matrix combinedtransfobefore = getCombinedTransfo(document);
+			System.out.println("Here is transformation resulting from combined operation (between Play and Stop):");
+			combinedtransfobefore.print(3, 2);
+			double scale_x=Math.sqrt(Math.pow(combinedtransfobefore.get(0, 0),2)+Math.pow(combinedtransfobefore.get(0, 1),2));
+			//double scale_y=Math.sqrt(Math.pow(combinedtransfobefore.get(1, 0),2)+Math.pow(combinedtransfobefore.get(1, 1),2));
+			System.out.println("Estimated Scaling :" + (double)(Math.round(scale_x*100))/100);
+			}
+			if ((mode3D==true)&&(nonrigid==false)){
+				SimilarityTransformation3D combinedtransfobefore = getCombinedTransfo3D(document);
+				System.out.println("Here is transformation resulting from combined operation (between Play and Stop):");
+				combinedtransfobefore.getMatrix().print(3, 2);
+			}
 			if (source.getValue() != null)
 				source.getValue().removeListener(this);
 			if (target.getValue() != null)

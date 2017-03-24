@@ -18,7 +18,13 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +47,9 @@ import icy.image.IcyBufferedImage;
 import icy.image.ImageUtil;
 import icy.image.lut.LUT;
 import icy.painter.Overlay;
+import icy.plugin.PluginDescriptor;
+import icy.plugin.PluginLauncher;
+import icy.plugin.PluginLoader;
 import icy.resource.ResourceUtil;
 import icy.roi.ROI;
 import icy.sequence.Sequence;
@@ -115,7 +124,8 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 	private EzVarText choicemode = new EzVarText("Transform Mode:",
 			new String[] { "About the same content in both n-D images","Find small part in bigger field of view","Find small part in bigger field of view Reverse"}, 0, false);
 	EzVarBoolean showtarget = new EzVarBoolean(" Also show the transformed target on source",false);
-	EzVarDouble distvar=new EzVarDouble("Max error allowed for testing in microns",1,0.1,100,1);
+	EzVarBoolean exporttoecclem = new EzVarBoolean(" Export results for further analysis in ec-clem",false);
+	EzVarDouble distvar=new EzVarDouble("Max error allowed for testing in microns",1,0,1000000,1);
 	EzVarInteger proportion=new EzVarInteger("Percentage of target point to keep for test",70,1,100,20);
 	
 	private double InputSpacingx;
@@ -151,6 +161,10 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 	private int keptpoint=0;
 	private double percent;
 	private int nbtasks;
+	private vtkPoints icppointsource;
+	private vtkPoints icppointtarget;
+
+	private Sequence sequence4;
 	@Override
 	public void stopExecution()
 	{
@@ -237,7 +251,8 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 		//nbtasks = Runtime.getRuntime().availableProcessors();
 		vtkTransform tobewritten=new vtkTransform();
 		boolean showtargetTransformed=showtarget.getValue();
-		// Transform ROI in VTK points (in nm)
+		boolean prepareexport=exporttoecclem.getValue();
+		// Transform ROI in VTK points (in um)
 		sourcepoint = getRoifromsequence(source.getValue(), 0, source.getValue().getSizeX(), 0,
 				source.getValue().getSizeY(), -1, source.getValue().getSizeZ());
 
@@ -245,8 +260,10 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 				Math.round(target.getValue().getSizeY()), -1, target.getValue().getSizeZ());
 		System.out.println("# source points" + sourcepoint.GetNumberOfPoints());
 		System.out.println("# target points" + targetpoint.GetNumberOfPoints());
+		// initialize icp points to be saved
+		icppointsource=new vtkPoints();
+		icppointtarget=new vtkPoints();
 		// Read datapixel etc and save it
-
 		setData(); //will set imagetraget etc..
 		distance=Double.POSITIVE_INFINITY;
 		minscore=Double.POSITIVE_INFINITY;
@@ -301,6 +318,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 					mybesttransform.DeepCopy(mybesttransform2);
 					aligned.DeepCopy(aligned2);
 					System.out.println("Reverse kept");
+					
 				}
 				else{
 						distance=back_updistance;
@@ -309,6 +327,9 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 						ReorientSourcepointandComputeRadius(false);
 						System.out.println("not reverse kept");
 				}
+				//Put back inlier point on Cos of taregt and of registred source
+				transformVtkInlierTargetPoints(reorientingTargetPoint);
+				transformVtkInlierSourcePoints(reorientingTargetPoint);
 				vtkTransform myvtktransformtmp=new vtkTransform();
 				myvtktransformtmp.SetMatrix(mybesttransform);
 				
@@ -331,6 +352,11 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 					if ((showtargetTransformed)||(this.isHeadLess())){
 						applyInverseTransformtoTarget(aligned);
 					}
+					writeCSVfile(icppointsource,"inlierregisteredsourcepointsinnm.csv");
+					writeCSVfile(icppointtarget,"inliertargetpointsinnm.csv");
+					System.out.println("Registrered point source and taregt has been saved under Icy directory as csv file");
+					System.out.println("You can reimport them using import RoiPointsfromfile");
+					System.out.println("For example to use a non rigid transform from ec-Clem");
 				}
 				else{
 					new AnnounceFrame("notransform found");
@@ -358,7 +384,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 				// apply the best one
 				
 				//this.distance=100;
-				double distance_max=10;
+				double distance_max=distvar.getValue()*1000;
 				myvtktransform=new vtkTransform();
 				ProgressFrame  progressc = new ProgressFrame("Analyzing Candidates..."); 
 				progressc.setLength(candidates.GetNumberOfPoints());
@@ -420,11 +446,18 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 						distance_max=distance;
 						myvtktransform.DeepCopy(myvtktransformtmp);
 						mycandidate.setHot();
+						transformVtkInlierTargetPoints(reorientingTargetPoint);
+						transformVtkInlierSourcePoints(reorientingTargetPoint);
+						writeCSVfile(icppointsource,"inlierregisteredsourcepointsinnm.csv");
+						writeCSVfile(icppointtarget,"inliertargetpointsinnm.csv");
+						System.out.println("Registrered point source and taregt has been saved under Icy directory as csv file");
+						System.out.println("You can reimport them using import RoiPointsfromfile");
+						System.out.println("For example to use a non rigid transform from ec-Clem");
 					}
 				}
 
 				progressc.close();
-				if (distance_max<10){
+				if (distance_max<distvar.getValue()*1000){
 					aligned.PostMultiply();
 					aligned.Concatenate(myvtktransform);
 					aligned.Update();
@@ -465,7 +498,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 			// apply the best one
 			
 			this.distance=Double.POSITIVE_INFINITY;
-			double distance_max=10;
+			double distance_max=distvar.getValue()*1000;
 			myvtktransform=new vtkTransform();
 			ProgressFrame  progressc = new ProgressFrame("Analyzing Candidates..."); 
 			progressc.setLength(candidates.GetNumberOfPoints());
@@ -525,11 +558,15 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 					distance_max=distance;
 					myvtktransform.DeepCopy(myvtktransformtmp);
 					mycandidate.setHot();
+					transformVtkInlierTargetPoints(reorientingTargetPoint);
+					transformVtkInlierSourcePoints(reorientingTargetPoint);
+					writeCSVfile(icppointsource,"inlierregisteredsourcepointsinnm.csv");
+					writeCSVfile(icppointtarget,"inliertargetpointsinnm.csv");
 				}
 			}
 
 			progressc.close();
-			if (distance_max<10){
+			if (distance_max<distvar.getValue()*1000){
 				aligned.PostMultiply();
 				aligned.Concatenate(myvtktransform);
 				aligned.Update();
@@ -538,7 +575,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 				System.out.println("I will apply transfo now"); 
 				applyTransformtosequenceandROI(aligned, distance_max, myvtktransform);
 				tobewritten.DeepCopy(aligned);
-				if ((showtargetTransformed)||(this.isHeadLess())){
+				if ((showtargetTransformed)||(this.isHeadLess())||(prepareexport)){
 					applyInverseTransformtoTarget(aligned);
 				}
 
@@ -549,25 +586,116 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 			}
 		}}
 		}
-writeTransfo(tobewritten);
+transformVtkInlierTargetPoints(tobewritten);
+transformVtkInlierSourcePoints(tobewritten);
+writeCSVfile(icppointsource,"inversetransfoinlierregisteredsourcepointsinnm.csv");
+writeCSVfile(icppointtarget,"inversetransfoinliertargetpointsinnm.csv");		
+writeTransfo(source.getValue(),target.getValue(),tobewritten);
+writeTransfo(target.getValue(),source.getValue(),(vtkTransform)tobewritten.GetInverse());
+if (prepareexport)
+{
+	LaunchReadytoUseEcCLEM();
+}
+	
+	
 	}
+	
+	/*
+	 * Duplicate source image and name it "target"
+	 * Load ICP inverse transfo source registered point 
+	 * Appy transfo on old Target Image to register it on source and name it "source"
+	 * Load ICP inverse transfo target points
+	 * Launch ec-clem and display a tip message (check the errors by launching 2D or 3D mode
+	 * Go for non rigid if needed
+	 */
+	private void LaunchReadytoUseEcCLEM() {
+		Sequence newtarget=SequenceUtil.getCopy(source.getValue());
+		vtkPolyData mypoints = new vtkPolyData();
+		mypoints.SetPoints(icppointsource); 
+		CreateRoifromPoints(newtarget, mypoints, Color.YELLOW, "ICP target");
+		newtarget.setName("Target");
+		addSequence(newtarget);
+		Sequence newsource=SequenceUtil.getCopy(sequence4);
+		newsource.setName("Source");
+		vtkPolyData mypoints2 = new vtkPolyData();
+		mypoints2.SetPoints(icppointtarget); 
+		CreateRoifromPoints(newsource, mypoints2, Color.YELLOW, "ICP source");
+		addSequence(newsource);
+		new ToolTipFrame(    			
+    			"<html>"+
+    			"<br> Use source and target as named. Loaded points are the paired point actually used for the registration. "+
+    			"<br> If you want to do the contrary check your icy installation for .csv and load the non reverse file"+
+    			"</html>"
+    			);	
+		for (final PluginDescriptor pluginDescriptor : PluginLoader
+				.getPlugins()) {
+
+			if (pluginDescriptor.getSimpleClassName()
+					.compareToIgnoreCase("EasyCLEMv0") == 0) {
+				// System.out.print(" ==> Starting by looking at the name....");
+
+				// Create a new Runnable which contain the proper
+				// launcher
+
+				PluginLauncher.start(pluginDescriptor);
+				
+			}
+		}
+		
+	}
+
+	private void transformVtkInlierTargetPoints(vtkTransform reorientingTargetPoint) {
+		// TODO Auto-generated method stub
+		vtkPolyData mypoints = new vtkPolyData();
+		mypoints.SetPoints(icppointtarget); 
+		vtkVertexGlyphFilter vertexfilter=new vtkVertexGlyphFilter(); 
+		vertexfilter.SetInputData(mypoints);
+		vtkPolyData newsetoftargetpoints=new vtkPolyData();
+		vertexfilter.Update();
+		newsetoftargetpoints.ShallowCopy(vertexfilter.GetOutput());
+		
+		vtkTransformPolyDataFilter trup=new  vtkTransformPolyDataFilter();
+		trup.SetInputData(newsetoftargetpoints);
+
+		trup.SetTransform(reorientingTargetPoint.GetInverse());
+		trup.Update(); 
+		icppointtarget = trup.GetOutput().GetPoints();
+	}
+	private void transformVtkInlierSourcePoints(vtkTransform transform) {
+		// TODO Auto-generated method stub
+		vtkPolyData mypoints = new vtkPolyData();
+		mypoints.SetPoints(icppointsource); 
+		vtkVertexGlyphFilter vertexfilter=new vtkVertexGlyphFilter(); 
+		vertexfilter.SetInputData(mypoints);
+		vtkPolyData newsetoftargetpoints=new vtkPolyData();
+		vertexfilter.Update();
+		newsetoftargetpoints.ShallowCopy(vertexfilter.GetOutput());
+		
+		vtkTransformPolyDataFilter trup=new  vtkTransformPolyDataFilter();
+		trup.SetInputData(newsetoftargetpoints);
+
+		trup.SetTransform(transform.GetInverse());
+		trup.Update(); 
+		icppointsource = trup.GetOutput().GetPoints();
+	}
+
 	/**
 	 * write xml file (sourcefilename suffixed with _AUTOTRANSFORM.xml with the transfo from source file so it can be applied back by applytransform
 	 * @param myvtktransform
 	 */
-private void writeTransfo(vtkTransform myvtktransform) {
+private void writeTransfo(Sequence imagesource, Sequence imagetarget, vtkTransform myvtktransform) {
 	vtkMatrix4x4 transfo = myvtktransform.GetMatrix();
-	String name = source.getValue().getFilename() + "_TRANSFOAUTO.xml";
+	String name = imagesource.getFilename() + "_TRANSFOAUTO.xml";
 	File XMLFile = new File(name);
 			
 			Document document = XMLUtil.createDocument(true);
 			Element transfoElement = XMLUtil.addElement(document.getDocumentElement(), "TargetSize");
-			XMLUtil.setAttributeIntValue(transfoElement, "width", target.getValue().getWidth());
-			XMLUtil.setAttributeIntValue(transfoElement, "height", target.getValue().getHeight());
-			XMLUtil.setAttributeDoubleValue(transfoElement, "sx", target.getValue().getPixelSizeX());
-			XMLUtil.setAttributeDoubleValue(transfoElement, "sy", target.getValue().getPixelSizeY());
-			XMLUtil.setAttributeDoubleValue(transfoElement, "sz", target.getValue().getPixelSizeZ());
-			XMLUtil.setAttributeIntValue(transfoElement, "nz", target.getValue().getSizeZ());
+			XMLUtil.setAttributeIntValue(transfoElement, "width", imagetarget.getWidth());
+			XMLUtil.setAttributeIntValue(transfoElement, "height", imagetarget.getHeight());
+			XMLUtil.setAttributeDoubleValue(transfoElement, "sx", imagetarget.getPixelSizeX());
+			XMLUtil.setAttributeDoubleValue(transfoElement, "sy", imagetarget.getPixelSizeY());
+			XMLUtil.setAttributeDoubleValue(transfoElement, "sz", imagetarget.getPixelSizeZ());
+			XMLUtil.setAttributeIntValue(transfoElement, "nz", imagetarget.getSizeZ());
 			XMLUtil.setAttributeIntValue(transfoElement, "auto", 1);
 			/*if (mode3D) {
 				XMLUtil.setAttributeIntValue(transfoElement, "nz", target.getValue().getSizeZ());
@@ -650,7 +778,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			int w = this.extentx+1; 
 			int h = this.extenty+1; 
 			DataType datatype =  imagesource.getDataType_(); 
-			Sequence  sequence2=SequenceUtil.getCopy(imagesource); 
+			Sequence sequence2=SequenceUtil.getCopy(imagesource); 
 			sequence2.beginUpdate();
 			sequence2.removeAllImages(); 
 			try {
@@ -900,7 +1028,8 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			if (!this.isHeadLess()) //called in Block protocol
 				
 				addSequence(sequence2);
-			sequence2.setName("Distance: "+distance_max+  " nbpoints: "+ nbpoints); 
+			sequence2.setName("Source Registered with Distance: "+(double)(Math.round(distance_max*100))/100+  "um nbpoints "+ nbpoints); 
+			sequence2.setFilename("SourceRegistered");
 			if (affine.getValue()==true)
 				new AnnounceFrame("Your source image has been isotropically rescaled at "+Math.round(aligned.GetScale()[0]*100)+"%");
 			if (this.isHeadLess())
@@ -911,8 +1040,8 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			
 			tr.SetTransform(myvtktransform);
 			tr.Update(); 
-			CreateRoifromPoints(sequence2,tr.GetOutput(),Color.RED);
-			CreateRoifromPoints(sequence2,targetpoint,Color.GREEN);
+			CreateRoifromPoints(sequence2,tr.GetOutput(),Color.RED,"registered source");
+			CreateRoifromPoints(sequence2,targetpoint,Color.GREEN,"target");
 			// create an overlay
 			if (!this.isHeadLess()){
 			Sequence Result1 = SequenceUtil.extractSlice(
@@ -1018,9 +1147,9 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			int w = this.source.getValue().getSizeX(); 
 			int h = this.source.getValue().getSizeY(); 
 			DataType datatype =  imagetarget.getDataType_(); 
-			Sequence  sequence2=SequenceUtil.getCopy(imagetarget); 
-			sequence2.beginUpdate();
-			sequence2.removeAllImages(); 
+			sequence4=SequenceUtil.getCopy(imagetarget); 
+			sequence4.beginUpdate();
+			sequence4.removeAllImages(); 
 			try {
 				switch (datatype){
 				case UBYTE:
@@ -1045,7 +1174,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsByte(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1074,7 +1203,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsByte(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1103,7 +1232,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsShort(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1132,7 +1261,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsShort(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1160,7 +1289,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsInt(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1188,7 +1317,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsInt(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1216,7 +1345,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsFloat(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1244,7 +1373,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 								image.setDataXYAsDouble(c, outData);
 
 							}
-							sequence2.setImage(t, z, image);
+							sequence4.setImage(t, z, image);
 
 						}
 
@@ -1255,22 +1384,22 @@ private void writeTransfo(vtkTransform myvtktransform) {
 					//
 				}
 
-				sequence2.setPixelSizeX(this.InputSpacingx);
-				sequence2.setPixelSizeY(this.InputSpacingy);
-				sequence2.setPixelSizeZ(this.InputSpacingz); 
+				sequence4.setPixelSizeX(this.InputSpacingx);
+				sequence4.setPixelSizeY(this.InputSpacingy);
+				sequence4.setPixelSizeZ(this.InputSpacingz); 
 			} 
 			finally {
 
-				sequence2.endUpdate();
+				sequence4.endUpdate();
 			}
 			// display the sequence
 			if (!this.isHeadLess())
-				addSequence(sequence2);
-			sequence2.setName("Target aligned on source"); 
+				addSequence(sequence4);
+			sequence4.setName("Target aligned on source"); 
 			
 			if (this.isHeadLess()){ //called in Block protocol
 				if (this.isHeadLess()){ //called in Block protocol
-					tseqtarget.setValue(sequence2);
+					tseqtarget.setValue(sequence4);
 				}
 			}
 			new AnnounceFrame("Use the Merge Channel Plugin if needed, or link both viewers",5);
@@ -1680,7 +1809,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			// IMPLEMENT pseudo RANSAC PROCEDURE (on subblock of the image)
 			int max_iter_icp = 100;
 			int max_iter_ransac = Math.max(100,Math.min(3*sourcepoint.GetNumberOfPoints(), 1000));
-			if (sourcepoint.GetNumberOfPoints()<20){
+			if (sourcepoint.GetNumberOfPoints()<100){
 				max_iter_ransac=500;
 				max_iter_icp = 500;
 			}
@@ -1852,6 +1981,7 @@ private void writeTransfo(vtkTransform myvtktransform) {
 						System.out.println(" Score" + " bestd "+mybestd+ "totald"+ mytotald);
 						System.out.println(" Nb subtargettotal " + subtargetpoint.GetNumberOfPoints());
 						System.out.println(" Nb points kept" + myicp.GetLandmarkTransform().GetSourceLandmarks().GetNumberOfPoints()+ " d="+mytotald);
+						System.out.println(" Nb points kept target" + myicp.GetLandmarkTransform().GetTargetLandmarks().GetNumberOfPoints()+ " d="+mytotald);
 						/*myicp.GetLandmarkTransform().SetModeToSimilarity();
 						myicp.Modified();
 						myicp.Update();*/
@@ -1861,7 +1991,10 @@ private void writeTransfo(vtkTransform myvtktransform) {
 						//minscore=score;
 						nbpoints=test.GetNumberOfPoints();
 						System.out.println(" Nb points kept" + nbpoints);
-
+						icppointsource.DeepCopy(myicp.GetLandmarkTransform().GetSourceLandmarks());
+						icppointtarget.DeepCopy(myicp.GetLandmarkTransform().GetTargetLandmarks());
+						//writeCSVfile(myicp.GetLandmarkTransform().GetSourceLandmarks(),"inlierregisteredsourcepoints");
+						//writeCSVfile(myicp.GetLandmarkTransform().GetTargetLandmarks(),"inliertargetpoints");
 
 						//}
 					}
@@ -1876,6 +2009,50 @@ private void writeTransfo(vtkTransform myvtktransform) {
 			myicp.Delete();
 			return mybesttransform;
 		}
+		/**
+		 * 
+		 * @param Landmarks, in mcrometers (metadata reading by default)
+		 * @param string filename where to save the list of points in nm
+		 */
+		private void writeCSVfile(vtkPoints Landmarks, String filename) {
+			BufferedWriter br=null;
+			try {
+
+				br = new BufferedWriter(new FileWriter(filename));
+				
+				String cvsSplitBy = ";";
+				int index=1;
+				//converttopixelZ=0;
+				for (int i=0;i<Landmarks.GetNumberOfPoints();i++){
+
+				        // use comma as separator
+					
+
+					
+					double[] coordinates=Landmarks.GetPoint(i);
+					String tobewritten=coordinates[0]*1000+cvsSplitBy+coordinates[1]*1000+cvsSplitBy+coordinates[2]*1000;
+					br.write(tobewritten);
+					br.newLine();
+					
+					
+				}
+				
+				System.out.println("Number of points written in "+filename+": "+Landmarks.GetNumberOfPoints() );
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				if (br != null) {
+					try {
+						br.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+}
+
 		/**
 		 * 
 		 * @param subtargetpoint
@@ -2072,6 +2249,7 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
 			
 			addEzComponent(choicemode);
 			addEzComponent(showtarget);
+			addEzComponent(exporttoecclem);
 			
 			/*addComponent( GuiUtil.createLineBoxPanel( 	
 					Box.createHorizontalGlue(),
@@ -2204,17 +2382,17 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
 		}
 
 		vtkImageData converttoVtkImageData(int posC, Sequence seq,boolean affectfield) {
-			final Sequence sequence2 = seq;
+			final Sequence sequence3 = seq;
 			if (seq == null)
 				return null;
 
-			final int sizeX = sequence2.getSizeX();
-			final int sizeY = sequence2.getSizeY();
-			final int sizeZ = sequence2.getSizeZ();
-			final DataType dataType = sequence2.getDataType_();
+			final int sizeX = sequence3.getSizeX();
+			final int sizeY = sequence3.getSizeY();
+			final int sizeZ = sequence3.getSizeZ();
+			final DataType dataType = sequence3.getDataType_();
 			final int posT;
 			if (!this.isHeadLess()){
-				 posT = sequence2.getFirstViewer().getPositionT();
+				 posT = sequence3.getFirstViewer().getPositionT();
 			}
 			else{
 				posT=0;
@@ -2391,7 +2569,7 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
  * @param points vtkpolydata (unit of position in micrometers)
  * TODO: chnage ROI2Dpoint to my own myROI3D
  */
-		protected void CreateRoifromPoints(Sequence seq, vtkPolyData points,Color mycolor) {
+		protected void CreateRoifromPoints(Sequence seq, vtkPolyData points,Color mycolor, String Name) {
 			vtkPoints listofpoints = points.GetPoints();
 			// seq.removeAllROI();
 			for (int i = 0; i < points.GetNumberOfPoints(); i++) {
@@ -2403,7 +2581,7 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
 				position.setY(listofpoints.GetPoint(i)[1] / seq.getPixelSizeY());
 				position.setZ(listofpoints.GetPoint(i)[2] / seq.getPixelSizeZ());
 				roi.setPosition5D(position);
-				roi.setName("ICP Point " + i);
+				roi.setName(Name+" Point " + i);
 				roi.setColor(mycolor);
 				seq.addROI(roi);
 

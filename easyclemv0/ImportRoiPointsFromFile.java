@@ -28,7 +28,8 @@ import icy.roi.ROI;
 import plugins.kernel.roi.roi2d.ROI2DPoint;
 import icy.sequence.Sequence;
 import icy.type.point.Point5D;
-
+import plugins.adufour.blocks.lang.Block;
+import plugins.adufour.blocks.util.VarList;
 import plugins.adufour.ezplug.EzPlug;
 
 import plugins.adufour.ezplug.EzVarFile;
@@ -39,19 +40,22 @@ import plugins.adufour.ezplug.EzVarText;
 import java.io.FileReader;
 import java.io.IOException;
 /**
- * TODO: read a csv, xls? or txt file and import ROI to the selected sequence, in trhe same order
- * TODO generate the non rigid landmarks registration based on ITK
+ * ec-clem utility: read a csv file and import ROI to the selected sequence as roi point, in the same order
+ * 
  * @author paul-gilloteaux-p
  *
  */
-public class ImportRoiPointsFromFile extends EzPlug{
+public class ImportRoiPointsFromFile extends EzPlug implements Block{
 
-	private EzVarSequence source;
-	private EzVarFile csvfile;
+	private EzVarSequence source=new EzVarSequence("sequence");
+
+	private EzVarFile csvfile=new EzVarFile(" csv file)", ApplicationPreferences.getPreferences().node("frame/imageLoader").get("path", "."));;
 	
 	private double converttopixelXY;
 	private double converttopixelZ;
-	private EzVarText choiceinputsection;
+	private EzVarText choiceinputsection= new EzVarText("Unit of the points in csv file",
+			new String[] { "millimeters", "micrometers","nanometers" ,"pixels" }, 2, false);
+	;
 
 	@Override
 	public void clean() {
@@ -64,20 +68,20 @@ public class ImportRoiPointsFromFile extends EzPlug{
 		Sequence sourceseq=source.getValue();
 		String unit=choiceinputsection.getValue();
 		if (unit=="millimeters"){
-			converttopixelXY=(1000*sourceseq.getPixelSizeX());
-			converttopixelZ=(1000*sourceseq.getPixelSizeZ());
+			converttopixelXY=(sourceseq.getPixelSizeX()/1000);
+			converttopixelZ=(sourceseq.getPixelSizeZ()/1000);
 		}
 		if (unit=="nanometers"){
-			converttopixelXY=sourceseq.getPixelSizeX()/1000;
-			converttopixelZ=sourceseq.getPixelSizeZ()/1000;
+			converttopixelXY=sourceseq.getPixelSizeX()*1000;
+			converttopixelZ=sourceseq.getPixelSizeZ()*1000;
 		}
 		if (unit=="micrometers"){
 			converttopixelXY=sourceseq.getPixelSizeX();
 			converttopixelZ=sourceseq.getPixelSizeZ();
 		}
 		if (unit=="pixels"){
-			converttopixelXY=100;
-			converttopixelZ=100;
+			converttopixelXY=1;
+			converttopixelZ=1;
 		}
 		if (sourceseq==null){
 			MessageDialog.showDialog("Please make sure that your image is opened");
@@ -98,9 +102,9 @@ public class ImportRoiPointsFromFile extends EzPlug{
 
 				System.out.println("x= " + coordinates[0] 
 	                                 + "  y=" + coordinates[1]  + " z="+coordinates[2] );
-				double x=Double.parseDouble(coordinates[0])*converttopixelXY;
-				double y=Double.parseDouble(coordinates[1])*converttopixelXY;
-				double z=Double.parseDouble(coordinates[2])*converttopixelZ;
+				double x=Double.parseDouble(coordinates[0])/converttopixelXY;
+				double y=Double.parseDouble(coordinates[1])/converttopixelXY;
+				double z=Double.parseDouble(coordinates[2])/converttopixelZ;
 				ROI roi =new ROI2DPoint();
 					
 					Point5D position = roi.getPosition5D();
@@ -145,14 +149,12 @@ public class ImportRoiPointsFromFile extends EzPlug{
     			"</html>"
     			);
 		
-		source=new EzVarSequence("Please select the sequence on which you want to create the ROIs");
+
 		String varName ="Please select the ROI file (csv format)";
 		if (source.getValue()!=null)
 			csvfile=new EzVarFile(varName, source.getValue().getFilename());
 		else
 			csvfile=new EzVarFile(varName, ApplicationPreferences.getPreferences().node("frame/imageLoader").get("path", "."));
-		choiceinputsection = new EzVarText("Unit of the points in csv file",
-				new String[] { "millimeters", "micrometers","nanometers" ,"pixels" }, 0, false);
 		
 		addEzComponent(csvfile);
 		addEzComponent(choiceinputsection);
@@ -166,4 +168,21 @@ public class ImportRoiPointsFromFile extends EzPlug{
 		
 	}
 
+	@Override
+	public void declareInput(VarList inputMap) {
+		// TODO Auto-generated method stub
+		
+		inputMap.add("Sequence to process",source.getVariable());
+		
+		
+		inputMap.add("CSV File to import",csvfile.getVariable());
+		
+		inputMap.add("unit",choiceinputsection.getVariable());
+	}
+
+	@Override
+	public void declareOutput(VarList outputMap) {
+		// TODO Auto-generated method stub
+		outputMap.add("sequence with Rois", source.getVariable());
+	}
 }

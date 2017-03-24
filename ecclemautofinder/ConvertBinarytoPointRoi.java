@@ -23,6 +23,8 @@ import icy.sequence.SequenceDataIterator;
 import icy.type.DataIteratorUtil;
 import icy.type.DataType;
 import icy.type.point.Point5D;
+import plugins.adufour.blocks.lang.Block;
+import plugins.adufour.blocks.util.VarList;
 import plugins.adufour.ezplug.EzPlug;
 import plugins.adufour.ezplug.EzVarBoolean;
 import plugins.adufour.ezplug.EzVarDouble;
@@ -48,7 +50,7 @@ import vtk.vtkUnsignedIntArray;
 import vtk.vtkUnsignedShortArray;
 import plugins.perrine.easyclemv0.myRoi3D;
 
-public class ConvertBinarytoPointRoi extends EzPlug{
+public class ConvertBinarytoPointRoi extends EzPlug implements Block{
 	private EzVarSequence source=new EzVarSequence("Binary Image");
 	//private EzVarInteger downsampling=new EzVarInteger("Downsampling for Roi generation",1,1,100,2 );
 	private EzVarDouble newsize=new EzVarDouble("put points every (in um)",1,0.01,100,0.1 );
@@ -397,6 +399,23 @@ public class ConvertBinarytoPointRoi extends EzPlug{
 		}
 
 		return  newImageData;
+	}
+
+	@Override
+	public void declareInput(VarList inputMap) {
+		// TODO Auto-generated method stub
+		inputMap.add("Sequence to process",source.getVariable());
+		
+		
+		inputMap.add("sampling",newsize.getVariable());
+		
+		inputMap.add("read rois instead of binary",fromrois.getVariable());
+	}
+
+	@Override
+	public void declareOutput(VarList outputMap) {
+		// TODO Auto-generated method stub
+		outputMap.add("sequence with Rois", source.getVariable());
 	}
 
 }

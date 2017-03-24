@@ -56,7 +56,7 @@ import plugins.adufour.filtering.Kernels1D;
 public class Preprocess3Dstackto2D extends EzPlug  {
 	EzVarSequence source;
 	EzVarBoolean Applytoallchanels=new EzVarBoolean("STEP 1: Do you want to apply it to all channels: ",true);
-	
+	Sequence tobeprocessed; // added to made it more robust to any crazy click on another image while having selected the Active Sequence Option
 	EzVarBoolean denoise=new EzVarBoolean("STEP 2: Do you want to denoise:", false);
 	EzVarBoolean flatten=new EzVarBoolean("STEP 3: Do you want to flatten the image:", false);
 	EzVarText choicemethodflatten = new EzVarText("Method of flatenning to be used", new String[] {
@@ -78,9 +78,9 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 
 	@Override
 	protected void execute() {
-		
-		int sizet= source.getValue().getSizeT();
-		int sizez= source.getValue().getSizeZ();
+		tobeprocessed=source.getValue();
+		int sizet= tobeprocessed.getSizeT();
+		int sizez= tobeprocessed.getSizeZ();
 		//Extract Channel if needed
 		if (Applytoallchanels.getValue()==false){
 			// get Id of of channel name
@@ -90,16 +90,16 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 					indc=c;
 				}
 			}
-			String extractedchannelname =source.getValue().getChannelName(indc);
-			source.getValue().beginUpdate();
+			String extractedchannelname =tobeprocessed.getChannelName(indc);
+			tobeprocessed.beginUpdate();
 			try{
-			Sequence channelextracted=SequenceUtil.extractChannel(source.getValue(),indc);
+			Sequence channelextracted=SequenceUtil.extractChannel(tobeprocessed,indc);
 			
-			source.getValue().removeAllImages();
+			tobeprocessed.removeAllImages();
 			for (int t=0; t<sizet; t++){
 				for (int z=0; z< sizez; z++){
 					IcyBufferedImage image= channelextracted.getImage(t, z);
-					source.getValue().setImage(t, z, image);
+					tobeprocessed.setImage(t, z, image);
 					
 
 				}
@@ -108,21 +108,22 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			}
 			finally{
 			
-			source.getValue().endUpdate();
-			source.getValue().setChannelName(0, extractedchannelname);
-			source.getValue().setFilename(source.getValue().getFilename()+ " ("+extractedchannelname+")");
-			source.getValue().setName(source.getValue().getName()+" ("+extractedchannelname+")");
+			tobeprocessed.endUpdate();
+			tobeprocessed.setChannelName(0, extractedchannelname);
+			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " ("+extractedchannelname+")");
+			tobeprocessed.setName(tobeprocessed.getName()+" ("+extractedchannelname+")");
 			}
 
 		}
 		// Apply denoising if asked
 		if (denoise.getValue()==true){
-			int nbchannel=source.getValue().getSizeC();
+			int nbchannel=tobeprocessed.getSizeC();
 			
 			
 			double objectdiameter=choiceobjectsize.getValue();
 			
-			 Sequence duplicate1=SequenceUtil.getCopy(source.getValue());
+			 Sequence duplicate1=SequenceUtil.getCopy(tobeprocessed);
+			 
 			 duplicate1.beginUpdate();
 			Kernels1D gaussianXY = Kernels1D.CUSTOM_GAUSSIAN.createGaussianKernel1D(objectdiameter);
            // Kernels1D gaussianZ = Kernels1D.CUSTOM_GAUSSIAN.createGaussianKernel1D(preFilter * scaleXZ);
@@ -137,19 +138,19 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			}
             duplicate1.endUpdate();
             
-            source.getValue().beginUpdate();
+            tobeprocessed.beginUpdate();
             try{
-            	for (int t=0;t<source.getValue().getSizeT();t++)
-            		for (int z=0;z<source.getValue().getSizeZ();z++){
-            			IcyBufferedImage image =substractbg(source.getValue(),duplicate1,t,z);
-            			source.getValue().setImage(t,z,image);
+            	for (int t=0;t<tobeprocessed.getSizeT();t++)
+            		for (int z=0;z<tobeprocessed.getSizeZ();z++){
+            			IcyBufferedImage image =substractbg(tobeprocessed,duplicate1,t,z);
+            			tobeprocessed.setImage(t,z,image);
             		}
             }
             finally{
-            	source.getValue().endUpdate();
+            	tobeprocessed.endUpdate();
             }
-            Sequence duplicate2=SequenceUtil.getCopy(source.getValue());
-			source.getValue().beginUpdate();
+            Sequence duplicate2=SequenceUtil.getCopy(tobeprocessed);
+			tobeprocessed.beginUpdate();
 			//Sequence denoised=new Sequence();
 			try{
 			for (int t=0; t<sizet; t++){
@@ -177,7 +178,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 
 				
 			}
-						source.getValue().setImage(t, z, imagedenoised);// done twice for nothing 
+						tobeprocessed.setImage(t, z, imagedenoised);// done twice for nothing 
 						
 					}
 
@@ -190,9 +191,9 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			
 		}
 			finally{
-			source.getValue().endUpdate();
-			source.getValue().setFilename(source.getValue().getFilename()+ " (denoised)");
-			source.getValue().setName(source.getValue().getName()+ " (denoised)");
+			tobeprocessed.endUpdate();
+			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (denoised)");
+			tobeprocessed.setName(tobeprocessed.getName()+ " (denoised)");
 			}
 		}
 
@@ -205,24 +206,24 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 		if ((choicemethodflatten.getValue() == "Do a maximum intensity projection")
 							&& (flatten.getValue() == true))
 		{
-			source.getValue().removeAllROI();
-			Sequence duplicate=SequenceUtil.getCopy(source.getValue());
+			tobeprocessed.removeAllROI();
+			Sequence duplicate=SequenceUtil.getCopy(tobeprocessed);
 			boolean max=true;
-			source.getValue().removeAllImages();
-			source.getValue().beginUpdate();
+			tobeprocessed.removeAllImages();
+			tobeprocessed.beginUpdate();
 			
 			try{
 			for (int t=0; t< sizet; t++){
 				IcyBufferedImage image2 = getProj(max, duplicate, t);
-				source.getValue().setImage(t, 0, image2);
+				tobeprocessed.setImage(t, 0, image2);
 				
 			}
 			
 			}
 			finally{
-			source.getValue().endUpdate();
-			source.getValue().setFilename(source.getValue().getFilename()+ " (max projection)");
-			source.getValue().setName(source.getValue().getName()+ " (max projection)");
+			tobeprocessed.endUpdate();
+			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (max projection)");
+			tobeprocessed.setName(tobeprocessed.getName()+ " (max projection)");
 			}
 		}
 		
@@ -230,24 +231,24 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 				if ((choicemethodflatten.getValue() == "Do a minimum intensity projection")
 									&& (flatten.getValue() == true))
 				{
-					source.getValue().removeAllROI();
-					Sequence duplicate=SequenceUtil.getCopy(source.getValue());
+					tobeprocessed.removeAllROI();
+					Sequence duplicate=SequenceUtil.getCopy(tobeprocessed);
 					boolean max=false;
-					source.getValue().removeAllImages();
-					source.getValue().beginUpdate();
+					tobeprocessed.removeAllImages();
+					tobeprocessed.beginUpdate();
 					try{
 					
 					for (int t=0; t< duplicate.getSizeT(); t++){
 						IcyBufferedImage image2 = getProj(max, duplicate, t);
-						source.getValue().setImage(t, 0, image2);
+						tobeprocessed.setImage(t, 0, image2);
 						
 					}
 					
 					}
 					finally{
-					source.getValue().endUpdate();
-					source.getValue().setFilename(source.getValue().getFilename()+ " (min projection)");
-					source.getValue().setName(source.getValue().getName()+ " (min projection)");
+					tobeprocessed.endUpdate();
+					tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (min projection)");
+					tobeprocessed.setName(tobeprocessed.getName()+ " (min projection)");
 					}
 				}
 				
@@ -273,10 +274,10 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			}
 			ProgressFrame progress = new ProgressFrame("Computing Optimized focus slice...");
 			progress.setPosition(0.2);
-			source.getValue().removeAllROI();
-			Sequence[] arrayofimage= new Sequence[source.getValue().getSizeC()];
-			for (int c=0; c<source.getValue().getSizeC(); c++){
-			ImagePlus test = ImageJUtil.convertToImageJImage(SequenceUtil.extractChannel(source.getValue(), c),
+			tobeprocessed.removeAllROI();
+			Sequence[] arrayofimage= new Sequence[tobeprocessed.getSizeC()];
+			for (int c=0; c<tobeprocessed.getSizeC(); c++){
+			ImagePlus test = ImageJUtil.convertToImageJImage(SequenceUtil.extractChannel(tobeprocessed, c),
 					new ProgressListener() {
 
 						@Override
@@ -357,7 +358,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 					});
 			test4.close();
 			test.close();
-			progress.setPosition(c/source.getValue().getSizeC());
+			progress.setPosition(c/tobeprocessed.getSizeC());
 			IJ.run("Close All");
 
 			// test=IJ.getImage();
@@ -365,20 +366,20 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			Sequence tmpnew= new Sequence(test2.getImage(0, 0));
 			arrayofimage[c]=tmpnew;
 			}
-			source.getValue().beginUpdate();
-			source.getValue().removeAllImages();
+			tobeprocessed.beginUpdate();
+			tobeprocessed.removeAllImages();
 			
 			try{
 				Sequence tmp= SequenceUtil.concatC(arrayofimage);
 				IcyBufferedImage test3= tmp.getImage(0, 0);
 					
-			source.getValue().setImage(0, 0, test3);
+			tobeprocessed.setImage(0, 0, test3);
 			
 			}
 			finally{
-			source.getValue().endUpdate();
-			source.getValue().setFilename(source.getValue().getFilename()+ " (Focused)");
-			source.getValue().setName(source.getValue().getName()+ " (Focused)");
+			tobeprocessed.endUpdate();
+			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (Focused)");
+			tobeprocessed.setName(tobeprocessed.getName()+ " (Focused)");
 			}
 			progress.setPosition(1);
 			progress.close();
