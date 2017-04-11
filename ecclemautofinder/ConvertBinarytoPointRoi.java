@@ -30,6 +30,7 @@ import plugins.adufour.ezplug.EzVarBoolean;
 import plugins.adufour.ezplug.EzVarDouble;
 //import plugins.adufour.ezplug.EzVarInteger;
 import plugins.adufour.ezplug.EzVarSequence;
+import plugins.kernel.roi.roi3d.ROI3DPoint;
 //import vtk.vtkContourTriangulator;
 import vtk.vtkDataArray;
 
@@ -48,7 +49,7 @@ import vtk.vtkShortArray;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtkUnsignedIntArray;
 import vtk.vtkUnsignedShortArray;
-import plugins.perrine.easyclemv0.myRoi3D;
+
 
 public class ConvertBinarytoPointRoi extends EzPlug implements Block{
 	private EzVarSequence source=new EzVarSequence("Binary Image");
@@ -142,7 +143,7 @@ public class ConvertBinarytoPointRoi extends EzPlug implements Block{
 		// seq.removeAllROI();
 		for (int i = 0; i < points.GetNumberOfPoints(); i=i+downsample) {
 			//for (int i = 0; i < 5; i++) {
-			myRoi3D roi = new myRoi3D();
+			ROI3DPoint roi = new ROI3DPoint();
 
 			Point5D position = roi.getPosition5D();
 			position.setX(listofpoints.GetPoint(i)[0] / seq.getPixelSizeX());
@@ -152,7 +153,8 @@ public class ConvertBinarytoPointRoi extends EzPlug implements Block{
 			position.setY(listofpoints.GetPoint(i)[1] );
 			position.setZ(listofpoints.GetPoint(i)[2] );*/
 			roi.setPosition5D(position);
-			roi.setZd(listofpoints.GetPoint(i)[2] / seq.getPixelSizeZ());
+			//roi.setZd(listofpoints.GetPoint(i)[2] / seq.getPixelSizeZ()); //not needed anymore, display dealt with by ROI3DPoint;
+			// (was my own roi3d before
 			roi.setName(" Point " + i);
 			roi.setColor(mycolor);
 			seq.addROI(roi);

@@ -57,6 +57,7 @@ import plugins.adufour.ezplug.EzVarFile;
 import plugins.adufour.ezplug.EzVarInteger;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.ezplug.EzVarText;
+import plugins.kernel.roi.roi3d.ROI3DPoint;
 
 
 //Purpose: create a table of value (TRE against FLE, N number of points (not the distance since it is given by error map
@@ -205,7 +206,7 @@ private void DisplayPointRois(double[][] sourcepoints2) {
 	double sizez=source.getValue().getPixelSizeZ()*1000;
 for (int i=0;i<sourcepoints2.length;i++)
 {
-	myRoi3D newroi=new myRoi3D(sourcepoints2[i][0]/sizex,sourcepoints2[i][1]/sizex, sourcepoints2[i][2]/sizez);
+	ROI3DPoint newroi=new ROI3DPoint(sourcepoints2[i][0]/sizex,sourcepoints2[i][1]/sizex, sourcepoints2[i][2]/sizez);
 	source.getValue().addROI(newroi);
 }
 }

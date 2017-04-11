@@ -19,6 +19,7 @@ package plugins.perrine.easyclemv0;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.Graphics2D;
 
@@ -51,7 +52,9 @@ import plugins.adufour.ezplug.EzVarText;
 import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
 
 import plugins.kernel.roi.roi2d.plugin.ROI2DPointPlugin;
-
+import plugins.kernel.roi.roi3d.ROI3DPoint;
+import plugins.kernel.roi.roi3d.plugin.ROI3DPointPlugin;
+import icy.canvas.Canvas2D;
 import icy.canvas.IcyCanvas;
 import icy.canvas.IcyCanvas2D;
 
@@ -462,7 +465,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		Colortab[6] = Color.LIGHT_GRAY;
 		Colortab[7] = Color.MAGENTA;
 		Colortab[8] = Color.ORANGE;
-		new ToolTipFrame("<html>" + "<br> Press Play when ready. " + "<br> <li> Add point on target image only.</li> "
+		new ToolTipFrame("<html>" + "<br> Press Play when ready. " + "<br> <li> Add point (2D or 3D ROI) on target image only.</li> "
+				+ "<br> <li> Drag the point in Source, and RIGHT CLICK. Then add point again on target. "
 				+ "<br> <li> If you add a point on source image instead (called point2D), delete it, "
 				+ "<br> and select the ROI Point to add a point from Target</li> "
 				+ "<br> <li> You can also prepare pair of points before , "
@@ -470,8 +474,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				+ "<br> <li> Do not forget that the transformation will be automatically saved "
 				+ "<br> and that you can apply to any image with the same original or a rescaled dimension.</li>"
 				+ "<br> <li> When working in 3D mode, make sure metadata (pixel size) are correctly calibrated, see Sequence Properties.</li> "
-				+ "</html>");
-
+				+ "</html>","startmessage");
+		
 		addEzComponent(versioninfo);
 		addEzComponent(choiceinputsection);
 
@@ -682,16 +686,19 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		ArrayList<ROI> listfiducials = target.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
 			ROI roi = listfiducials.get(i);
-			if (roi.getClassName() != "plugins.perrine.easyclemv0.myRoi3D") {
-				roi = new myRoi3D(roi);
-				listfiducials.set(i, roi);// then we convert the Roi
+			if (roi.getClassName() != "plugins.kernel.roi.roi3d.ROI3DPoint") {
+				ROI3DPoint roi3D = new ROI3DPoint(roi.getPosition5D());
+				roi3D.setName(roi.getName());
+				roi3D.setColor(roi.getColor());
+				roi3D.setStroke(roi.getStroke());
+				listfiducials.set(i, roi3D);// then we convert the Roi
 			}
 		}
 
 		target.getValue().removeAllROI();
 
-		target.getValue().addROIs(listfiducials, false);
-
+		boolean test=target.getValue().addROIs(listfiducials, false);
+		System.out.println(test);
 		ReOrder(listfiducials);
 		// target.getValue().removeAllROI();
 		// target.getValue().addROIs(listfiducials, true);
@@ -701,7 +708,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		for (ROI roi : listfiducials) {
 			i++;
 			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-			if (roi.getClassName() == "plugins.perrine.easyclemv0.myRoi3D")
+			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
 				p3D = roi.getPosition5D();
 			if (Double.isNaN(p3D.getX()))
 				p3D = roi.getPosition5D(); // some Roi does not have gravity
@@ -731,9 +738,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		ArrayList<ROI> listfiducials = source.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
 			ROI roi = listfiducials.get(i);
-			if (roi.getClassName() != "plugins.perrine.easyclemv0.myRoi3D") {
-				roi = new myRoi3D(roi);
-				listfiducials.set(i, roi);// then we convert the Roi
+			if (roi.getClassName() != "plugins.kernel.roi.roi3d.ROI3DPoint") {
+				ROI3DPoint roi3D = new ROI3DPoint(roi.getPosition5D());
+				roi3D.setName(roi.getName());
+				roi3D.setColor(roi.getColor());
+				roi3D.setStroke(roi.getStroke());
+				listfiducials.set(i, roi3D);// then we convert the Roi
+				
 			}
 		}
 
@@ -750,7 +761,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		for (ROI roi : listfiducials) {
 			i++;
 			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-			if (roi.getClassName() == "plugins.perrine.easyclemv0.myRoi3D")
+			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
 				p3D = roi.getPosition5D();
 
 			if (Double.isNaN(p3D.getX()))
@@ -965,7 +976,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		XMLUtil.saveDocument(myXMLdoc, XMLFile);
 		System.out.println("Transformation will be saved as " + XMLFile.getPath());
 
-		new AnnounceFrame("Select point on image" + target.getValue().getName() + ", then drag it on source images", 5);
+		new AnnounceFrame("Select point on image" + target.getValue().getName() + ", then drag it on source image and RIGHT CLICK", 5);
 
 		// targetseq.addListener(this);
 		// if (flagRegister)
@@ -1019,6 +1030,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 				// sequence.
 			}
+			source.getValue().setAutoUpdateChannelBounds(true);
+			
 			// we apply the previous combined transfo to the orginal image
 			// before applying the new transfo in order to avoid bad cropping of
 			// the pixels intensity values
@@ -1049,6 +1062,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				mytransformer.setParameters(transfo);
 				mytransformer.setDestinationsize(target.getValue().getWidth(), target.getValue().getHeight());
 				mytransformer.run();
+				
+				
 				// set the calibration to target calibration
 				double pixelsizexum = target.getValue().getPixelSizeX();
 				double pixelsizeyum = target.getValue().getPixelSizeY();
@@ -1168,9 +1183,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 			}
 
 		}
-
-		Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
-		// corrected for LUT adjustement
+		if (mode3D){
+			Icy.getMainInterface().setSelectedTool(ROI3DPointPlugin.class.getName());
+		}
+		else{
+			Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
+		}
+			// corrected for LUT adjustement
 		source.getValue().getFirstViewer().getLutViewer().setAutoBound(false);
 	}
 
@@ -1430,7 +1449,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		ReOrder(listfiducials);
 		// fiducials=new double[10][3];
 		int i = -1;
-		System.out.println("True Z position (zd in roi xml):");
+		//System.out.println("True Z position (zd in roi xml):");
 		for (ROI roi : listfiducials) {
 			// roi=(myRoi3D)roi;
 			i++;
@@ -1466,18 +1485,9 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 					if (event.getType() == SequenceEventType.ADDED) {
 						target.getValue().removeListener(this);
 						flagReadyToMove = false;
-						// System.out.println("event on target type ROI ADDED");
+						//System.out.println("event on target type ROI ADDED");
 						double z = target.getValue().getFirstViewer().getPositionZ(); // was
-																						// get
-																						// active
-																						// viewer,
-																						// changed
-																						// to
-																						// prevent
-																						// bad
-																						// placing
-																						// of
-																						// z
+																// z
 						ROI roi = (ROI) event.getSource();
 
 						Point5D pos = roi.getPosition5D();
@@ -1587,13 +1597,17 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 						// System.out.println("event on SOURCE type ROI");
 
 						if (event.getType() == SequenceEventType.CHANGED) {
-							// System.out.println("event on SOURCE type ROI
-							// CHANGED");
-
-							if (((ROI) event.getSource()).isFocused()) {
-								// System.out.println("Roi is still updated");
-								// ThreadUtil.sleep(10);
-
+							System.out.println("event on SOURCE type ROI CHANGED");
+							
+							
+							boolean test= ((ROI)event.getSource()).isSelected()||((ROI)event.getSource()).isFocused();
+							System.out.println(test);
+							ThreadUtil.sleep(10);
+							
+							if (test) {
+								//System.out.println("Roi is still updated");
+								 ThreadUtil.sleep(1);
+								
 							} else {
 								target.getValue().addListener(this);
 								source.getValue().removeListener(this);
@@ -1641,9 +1655,16 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * @return
 	 */
 	public Matrix getCombinedTransfo(Document document) {
+		// to fix the java null exception
+		if (XMLFile==null)
+		{
+			System.out.println("XMLFile Not created yet, return identity");
+			return Matrix.identity(4, 4);
+		}
 		Element root = XMLUtil.getRootElement(document);
 		// V1.0.7 add securities
 		if (root == null) {
+			// @TODO : verifier le java null exception ici.
 			new AnnounceFrame("Could not find " + XMLFile.getName() + ". Check the CONSOLE output.", 5);
 			System.out.println("The file " + XMLFile.getName()
 					+ "was not found , check that you have writing right in the directory");

@@ -154,7 +154,7 @@ public class ImageTransformer implements Runnable {
 		} finally {
 
 			sequence.endUpdate();
-
+			
 			// sequence.
 		}
 		progress.close();
@@ -178,7 +178,7 @@ public class ImageTransformer implements Runnable {
 			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 					RenderingHints.VALUE_INTERPOLATION_BICUBIC);// BICUBIC plutot? was bilinear
 			g2d.drawImage(image, transform, null);
-
+			g2d.dispose();
 			IcyBufferedImage icyImage = IcyBufferedImage.createFrom(imageDest);
 			// convert with rescale
 			// This was the antibug which is now causing a bug since 1.6.11 icy core update

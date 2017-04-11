@@ -17,7 +17,7 @@ package plugins.perrine.easyclemv0;
  * @author perrine.paul-gilloteaux@univ-nantes.fr
  * This plugin allow to compute the leave one out error for rigid 
  * or non rig transformation based on monteCarlo Simulation to mimick the Fiducial localisation error
- * TODO implement  the 3D config.
+ * TODO implement  the 3D config. started
  * Added the comparison with thin plate spline transform (leave one out discrepancy)
  */
 
@@ -78,6 +78,7 @@ import plugins.adufour.ezplug.EzVarInteger;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.ezplug.EzVarText;
 import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
+import plugins.kernel.roi.roi3d.ROI3DPoint;
 import vtk.vtkPoints;
 import vtk.vtkPolyData;
 import vtk.vtkThinPlateSplineTransform;
@@ -244,9 +245,9 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 		this.backuptargetpoints[i][j]=this.targetpoints[i][j];
 		this.backupsourcepoints[i][j]=this.sourcepoints[i][j];
 			}
-			this.backuproitarget.add(new myRoi3D(target.getROIs().get(i)));
+			this.backuproitarget.add(new ROI3DPoint(target.getROIs().get(i).getPosition5D()));
 			
-			this.backuproisource.add(new myRoi3D(sourceseq.getROIs().get(i)));
+			this.backuproisource.add(new ROI3DPoint(sourceseq.getROIs().get(i).getPosition5D()));
 		}
 		// Step 2: Compute transform with all points
 		
@@ -297,9 +298,9 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 				ArrayList<ROI> tmpcopyroitarget=new ArrayList<ROI>();
 				for (int i=0;i<this.backupsourcepoints.length;i++){
 					
-					tmpcopyroisource.add(new myRoi3D(this.backuproitarget.get(i)));
+					tmpcopyroisource.add(new ROI3DPoint(this.backuproitarget.get(i).getPosition5D()));
 					
-					tmpcopyroitarget.add(new myRoi3D(this.backuproisource.get(i)));
+					tmpcopyroitarget.add(new ROI3DPoint(this.backuproisource.get(i).getPosition5D()));
 				}
 				if (stopflag)break;
 			target.removeAllROI();
