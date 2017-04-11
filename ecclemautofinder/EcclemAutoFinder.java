@@ -2152,6 +2152,7 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
 							"<br>  </li>"+
 							"<br> See the online tutorials for further example or the wizard (I need help). </li>"+
 							"<br>"+
+							"</html>", "helpautofinder"
 					);
 			
 			addEzComponent(versioninfo);
