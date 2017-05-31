@@ -19,7 +19,7 @@ package plugins.perrine.easyclemv0;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Cursor;
+
 import java.awt.Font;
 import java.awt.Graphics2D;
 
@@ -54,7 +54,7 @@ import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
 import plugins.kernel.roi.roi2d.plugin.ROI2DPointPlugin;
 import plugins.kernel.roi.roi3d.ROI3DPoint;
 import plugins.kernel.roi.roi3d.plugin.ROI3DPointPlugin;
-import icy.canvas.Canvas2D;
+
 import icy.canvas.IcyCanvas;
 import icy.canvas.IcyCanvas2D;
 
@@ -698,7 +698,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		target.getValue().removeAllROI();
 
 		boolean test=target.getValue().addROIs(listfiducials, false);
-		System.out.println(test);
+		
 		ReOrder(listfiducials);
 		// target.getValue().removeAllROI();
 		// target.getValue().addROIs(listfiducials, true);
@@ -952,9 +952,9 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		// overlay.
 		sourceseq.setName(sourceseq.getName() + " (transformed)");
 
-		String name = source.getValue().getFilename() + "_transfo.xml";
+		String name = sourceseq.getFilename() + "_transfo.xml";
 		XMLFile = new File(name);
-		sourceseq.setFilename(sourceseq.getName() + " (transformed)");
+		sourceseq.setFilename(sourceseq.getName() + ".tif");
 		Document myXMLdoc = XMLUtil.createDocument(true);
 		Element transfoElement = XMLUtil.addElement(myXMLdoc.getDocumentElement(), "TargetSize");
 		XMLUtil.setAttributeIntValue(transfoElement, "width", target.getValue().getWidth());
@@ -1265,19 +1265,41 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	}
 
 	SimilarityTransformation3D getCombinedTransfo3D(Document document) {
+		// the default value of orisizex has to the actual pixel size:
+				// otherwise during the initialisation (i.e the first tranform
+		// when getcombined transform has nothing to return
+		double orisizex = source.getValue().getPixelSizeX();
+		double orisizey = source.getValue().getPixelSizeY();
+		double orisizez = source.getValue().getPixelSizeZ();
+		if (XMLFile==null)
+		{
+			System.out.println("XMLFile Not created yet, return identity");
+			Matrix CombinedTransfo = Matrix.identity(4, 4);
+			
 
+			SimilarityTransformation3D resulttransfo = new SimilarityTransformation3D(CombinedTransfo, orisizex, orisizey,
+					orisizez);
+			return resulttransfo;
+			
+		}
+		if (document==null)
+		{
+			System.out.println("XMLFile Not created yet, return identity");
+			Matrix CombinedTransfo = Matrix.identity(4, 4);
+			
+
+			SimilarityTransformation3D resulttransfo = new SimilarityTransformation3D(CombinedTransfo, orisizex, orisizey,
+					orisizez);
+			return resulttransfo;
+			
+		}
 		Element root = XMLUtil.getRootElement(document);
 
 		ArrayList<Element> transfoElementArrayList = XMLUtil.getElements(root, "MatrixTransformation");
 		// int nbtransfo=transfoElementArrayList.size();
 		ArrayList<Matrix> listoftransfo = new ArrayList<Matrix>();
 		boolean firsttime = true;
-		// the default value of orisizex has to the actual pixel size:
-		// otherwise during the initialisation (i.e the first tranform
-		// when getcombined transform has nothing to return
-		double orisizex = source.getValue().getPixelSizeX();
-		double orisizey = source.getValue().getPixelSizeY();
-		double orisizez = source.getValue().getPixelSizeZ();
+		
 
 		for (Element transfoElement : transfoElementArrayList) {
 			double[][] m = new double[4][4];
@@ -1597,11 +1619,11 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 						// System.out.println("event on SOURCE type ROI");
 
 						if (event.getType() == SequenceEventType.CHANGED) {
-							System.out.println("event on SOURCE type ROI CHANGED");
+							//System.out.println("event on SOURCE type ROI CHANGED");
 							
 							
 							boolean test= ((ROI)event.getSource()).isSelected()||((ROI)event.getSource()).isFocused();
-							System.out.println(test);
+							//System.out.println(test);
 							ThreadUtil.sleep(10);
 							
 							if (test) {
@@ -1649,7 +1671,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 	/**
 	 * Compute the combined transform from all previous transform step stored in
-	 * the xml, in order to apply it once onlyto avoid interpolation errors
+	 * the xml, in order to apply it once only to avoid interpolation errors
 	 * 
 	 * @param document
 	 * @return
@@ -1657,6 +1679,11 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	public Matrix getCombinedTransfo(Document document) {
 		// to fix the java null exception
 		if (XMLFile==null)
+		{
+			System.out.println("XMLFile Not created yet, return identity");
+			return Matrix.identity(4, 4);
+		}
+		if (document==null)
 		{
 			System.out.println("XMLFile Not created yet, return identity");
 			return Matrix.identity(4, 4);
