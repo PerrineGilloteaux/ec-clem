@@ -1,6 +1,13 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
 <root>
-<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=418&pluginVersion=1.0.0.1]]></url><name>Ec-Clem AUTOFINDER</name><version>1.0.0.1</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=418&pluginVersion=1.0.0.1]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4189]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4190]]></image_url><description><![CDATA[Automatic registration in 2D or 3D based on detection or binary mask. ]]></description><classname><![CDATA[plugins.perrine.ecclemautofinder.EcclemAutoFinder]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=418&pluginVersion=1.0.0.2]]></url><name>Ec-Clem AUTOFINDER</name><version>1.0.0.2</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=418&pluginVersion=1.0.0.2]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4189]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4190]]></image_url><description><![CDATA[Automatic registration in 2D or 3D based on detection or binary mask. ]]></description><classname><![CDATA[plugins.perrine.ecclemautofinder.EcclemAutoFinder]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+Version 1.0.0.2
+Date 2017-08-18 11:24:17
+
+- fixed a bug on checkbox "export to ec-clem" for preparing data for further registration or analysis in EC-CLEM
+
+
+-
 Version 1.0.0.1
 Date 2017-04-11 12:25:34
 

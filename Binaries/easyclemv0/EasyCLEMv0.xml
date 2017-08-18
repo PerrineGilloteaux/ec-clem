@@ -1,6 +1,25 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
 <root>
-<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=355&pluginVersion=1.0.0.6]]></url><name>ec-CLEM</name><version>1.0.0.6</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=355&pluginVersion=1.0.0.6]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3838]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3839]]></image_url><description><![CDATA[Align multidimensional images in 2D or 3D, rigidly or with warping, whatever the difference in scale. Provide also a set of tools for Correlative Light Electron Microscopy, but can be used for registration/alignement of any correlative imaging.]]></description><classname><![CDATA[plugins.perrine.easyclemv0.EasyCLEMv0]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=355&pluginVersion=1.0.0.7]]></url><name>ec-CLEM</name><version>1.0.0.7</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=355&pluginVersion=1.0.0.7]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3838]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3839]]></image_url><description><![CDATA[Align multidimensional images in 2D or 3D, rigidly or with warping, whatever the difference in scale. Provide also a set of tools for Correlative Light Electron Microscopy, but can be used for registration/alignement of any correlative imaging.]]></description><classname><![CDATA[plugins.perrine.easyclemv0.EasyCLEMv0]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+Version 1.0.0.7
+Date 2017-08-18 11:20:44
+
+- importRoiPointsFromFile : Add an option to have x,y in physical units,
+with an offset of 1 (slice 1 is 0 in Icy) + modify the type of ROI to
+ROI 3D point  + add the name to easily see the center of gravity of the
+3D point.
+
+- ec-clem : fixed a bug on "show Roi on source image" by adding the
+correct pixel size in 3D. The bug was only hapening when the pixel size
+were different in source and target image.
+
+- minor ecclem:  change the type conversion after 2D transform
+(deprecated method in icy)
+-minor ec-clem : remove an unused variable+ update sequence
+concatenation according to icy api last updates.
+
+
+-
 Version 1.0.0.6
 Date 2017-06-16 17:43:09
 
