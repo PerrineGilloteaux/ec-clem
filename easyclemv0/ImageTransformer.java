@@ -24,7 +24,7 @@ import Jama.Matrix;
 import icy.gui.frame.progress.ProgressFrame;
 import icy.image.IcyBufferedImage;
 import icy.image.IcyBufferedImageUtil;
-import icy.math.Scaler;
+
 import icy.sequence.Sequence;
 import icy.sequence.SequenceUtil;
 import icy.type.DataType;
@@ -182,22 +182,22 @@ public class ImageTransformer implements Runnable {
 			IcyBufferedImage icyImage = IcyBufferedImage.createFrom(imageDest);
 			// convert with rescale
 			// This was the antibug which is now causing a bug since 1.6.11 icy core update
-			 double boundsDst[] = imagetobemodified.getImage(c)
-					.getChannelsGlobalBounds();
+			// double boundsDst[] = imagetobemodified.getImage(c)
+			//		.getChannelsGlobalBounds();
 			//;
-			double boundsSrc[] = icyImage.getChannelsGlobalBounds();
+			//double boundsSrc[] = icyImage.getChannelsGlobalBounds();
 
 			// icyImage=IcyBufferedImageUtil.convertToType(icyImage, oriType,
 			// false);// rescale for now intensity
-			Scaler scaler = new Scaler(boundsSrc[0], boundsSrc[1],
-					boundsDst[0], boundsDst[1], false);
+			//Scaler scaler = new Scaler(boundsSrc[0], boundsSrc[1],
+			//		boundsDst[0], boundsDst[1], false);
 			// ICI: se debrouiller pour que l'instensité reste la meme qu'avant
 			//icyImage = IcyBufferedImageUtil.convertToType(icyImage, oriType,
 					//scaler);
 					
 		
 			if (icyImage.getDataType_()!=oriType)
-			{final IcyBufferedImage tmp=IcyBufferedImageUtil.convertToType(icyImage, oriType, scaler);
+			{final IcyBufferedImage tmp= IcyBufferedImageUtil.convertToType(icyImage, oriType, false,true);
 			tmp.dataChanged();
 			imagetobekept.copyData(tmp, 0, c);
 			imagetobekept.dataChanged();

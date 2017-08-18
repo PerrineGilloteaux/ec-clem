@@ -252,6 +252,9 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 		vtkTransform tobewritten=new vtkTransform();
 		boolean showtargetTransformed=showtarget.getValue();
 		boolean prepareexport=exporttoecclem.getValue();
+		// make sure that Target transformed will also be generated in case
+		if (prepareexport==true)
+			showtargetTransformed=true;
 		// Transform ROI in VTK points (in um)
 		sourcepoint = getRoifromsequence(source.getValue(), 0, source.getValue().getSizeX(), 0,
 				source.getValue().getSizeY(), -1, source.getValue().getSizeZ());

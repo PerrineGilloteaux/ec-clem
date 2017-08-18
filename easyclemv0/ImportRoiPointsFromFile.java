@@ -25,13 +25,15 @@ import icy.gui.dialog.MessageDialog;
 import icy.gui.frame.progress.ToolTipFrame;
 import icy.preferences.ApplicationPreferences;
 import icy.roi.ROI;
+import icy.roi.ROI3D;
 import plugins.kernel.roi.roi2d.ROI2DPoint;
+import plugins.kernel.roi.roi3d.ROI3DPoint;
 import icy.sequence.Sequence;
 import icy.type.point.Point5D;
 import plugins.adufour.blocks.lang.Block;
 import plugins.adufour.blocks.util.VarList;
 import plugins.adufour.ezplug.EzPlug;
-
+import plugins.adufour.ezplug.EzVarBoolean;
 import plugins.adufour.ezplug.EzVarFile;
 
 import plugins.adufour.ezplug.EzVarSequence;
@@ -55,6 +57,8 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 	private double converttopixelZ;
 	private EzVarText choiceinputsection= new EzVarText("Unit of the points in csv file",
 			new String[] { "millimeters", "micrometers","nanometers" ,"pixels" }, 2, false);
+	private EzVarBoolean choicez= new EzVarBoolean("Z in Slice # (as from IJ/Fiji)",
+			false);
 	;
 
 	@Override
@@ -102,10 +106,19 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 
 				System.out.println("x= " + coordinates[0] 
 	                                 + "  y=" + coordinates[1]  + " z="+coordinates[2] );
+				
 				double x=Double.parseDouble(coordinates[0])/converttopixelXY;
 				double y=Double.parseDouble(coordinates[1])/converttopixelXY;
 				double z=Double.parseDouble(coordinates[2])/converttopixelZ;
-				ROI roi =new ROI2DPoint();
+				if (choicez.getValue()==true) // z is is in slice
+				{
+					System.out.println("z is assumed to be in slice number, will be converted to z-1 " );
+					System.out.println(" Example (IJ starting slice numering at 1, starting at 0 in Icy)");
+					int offset=1;
+					z=Double.parseDouble(coordinates[2])-offset;
+				}
+				
+				ROI3DPoint roi =new ROI3DPoint();
 					
 					Point5D position = roi.getPosition5D();
 					position.setX(x);
@@ -113,6 +126,7 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 					position.setZ(z);
 					roi.setPosition5D(position);
 					roi.setName("Point "+ index);
+					roi.setShowName(true);
 					source.getValue().addROI(roi);
 				index=index+1;
 
@@ -145,8 +159,11 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
     			"<br>a semi column separator. No header."+
     			"<br> x1;y1;z1"+
     			"<br> x2;y2;z2"+
+    			" <br> Use Excel for example to edit your file and save your excel file as .csv semi colum"+
     			" <br>Do the same with source and target image and you are ready to apply the transform of your choice"+
-    			"</html>"
+				"<br> If \"z in slice number\" is checked, z is assumed to be in slice number, and will be converted to z-1 "+
+		         " <br> assuming a starting slice numbered at 1 in IJ, starting at 0 in Icy)"+
+    			"</html>","importmessage"
     			);
 		
 
@@ -158,6 +175,7 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 		
 		addEzComponent(csvfile);
 		addEzComponent(choiceinputsection);
+		addEzComponent(choicez);
 		addEzComponent(source);
 		// we will express everything in pixel, by using a converttopixel factor
 		

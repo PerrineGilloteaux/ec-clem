@@ -923,11 +923,11 @@ public class OrthoViewerRoi extends Plugin implements PluginCanvas {
                              
                             }
                             g3.setColor(Color.red);
-                            OrthoCanvasRoi.this.setForeground(Color.red);
+                            //OrthoCanvasRoi.this.setForeground(Color.red);
                             g3.setStroke(new BasicStroke((float) ROI.getAdjustedStroke(OrthoCanvasRoi.this, stroke + (roi.isSelected() ? 1d : 0d))));
-                            roicopy.getOverlay().setColor(Color.red);
-                            roicopy.getOverlay().setStroke(stroke);
-                            roicopy.getOverlay().setOpacity(1);
+                            //roicopy.getOverlay().setColor(Color.red);
+                            //roicopy.getOverlay().setStroke(stroke);
+                            //roicopy.getOverlay().setOpacity(1);
                             roicopy.getOverlay().paint(g3, seq,OrthoCanvasRoi.this);
                             
                             

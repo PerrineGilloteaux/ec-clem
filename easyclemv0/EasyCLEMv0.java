@@ -74,7 +74,7 @@ import icy.plugin.PluginLauncher;
 import icy.plugin.PluginLoader;
 import icy.roi.ROI;
 
-import icy.roi.ROIUtil;
+
 import icy.sequence.Sequence;
 import icy.sequence.SequenceEvent;
 import icy.sequence.SequenceListener;
@@ -219,7 +219,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				for (ROI roi : listfiducials) {
 
 					// @SuppressWarnings("deprecation")
-					Point5D p3D = ROIUtil.getMassCenter(roi);
+					Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
 					if (Double.isNaN(p3D.getX()))
 						p3D = roi.getPosition5D(); // some Roi does not have
 													// gravity
@@ -376,7 +376,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 				for (ROI roi : listfiducials) {
 
-					Point5D p3D = ROIUtil.getMassCenter(roi);
+					Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
 					if (Double.isNaN(p3D.getX()))
 						p3D = roi.getPosition5D(); // some Roi does not have
 													// gravity
@@ -697,7 +697,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 		target.getValue().removeAllROI();
 
-		boolean test=target.getValue().addROIs(listfiducials, false);
+		target.getValue().addROIs(listfiducials, false);
 		
 		ReOrder(listfiducials);
 		// target.getValue().removeAllROI();
@@ -1042,8 +1042,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				SimilarityRegistrationAnalytic meanfiducialsalgo = new SimilarityRegistrationAnalytic();
 				SimilarityTransformation2D newtransfo = meanfiducialsalgo.apply(fiducialsvector);
 				lasttransfo = newtransfo;
-				double Sangle = newtransfo.getS();
-				double Cangle = newtransfo.getC();
+				//double Sangle = newtransfo.getS();
+				//double Cangle = newtransfo.getC();
 				double dx = newtransfo.getdx();
 				double dy = newtransfo.getdy();
 				double scale = newtransfo.getscale();
@@ -1823,10 +1823,18 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 						// Result2v.getLut().copyFrom(targetlut);
 						// Result2v.close();
 
-						Sequence[] sequences = { Result1, Result2 };
-						Sequence Result = SequenceUtil.concatC(sequences);
+						Sequence[] sequences = new Sequence[Result1.getSizeC()+Result2.getSizeC()];
+						for (int c=0;c<Result1.getSizeC();c++)
+							sequences[c]=SequenceUtil.extractChannel(Result1, c);
+						for (int c=Result1.getSizeC();c<Result1.getSizeC()+Result2.getSizeC();c++)
+							sequences[c]=SequenceUtil.extractChannel(Result2, c-Result1.getSizeC());
+						boolean fillEmpty=false;
+						boolean rescale=false;
+						int[] channels=new int[sequences.length];
+						Sequence Result = SequenceUtil.concatC(sequences, channels, fillEmpty, rescale, null);
+						
 						Viewer vout = new Viewer(Result);
-
+						
 						Result.setName("Overlayed");
 						for (int c = 0; c < sourcenchannel; c++)
 							vout.getLut().getLutChannel(c).getColorMap()

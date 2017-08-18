@@ -202,6 +202,7 @@ public class GuiCLEMButtons extends JPanel {
 				else{
 					boolean sorted=true;
 					List<ROI> listRoisource =GuiCLEMButtons.this.matiteclasse.source.getValue().getROIs(sorted);
+					// for 2D
 					if (((GuiCLEMButtons.this.matiteclasse.mode3D==false)&&listRoisource.size()>2)||((GuiCLEMButtons.this.matiteclasse.mode3D==true)&&listRoisource.size()>3))
 					{
 					// remove last added ROI, 
@@ -411,6 +412,7 @@ public class GuiCLEMButtons extends JPanel {
 				else{
 					boolean sorted=true;
 					List<ROI> listRoisource =GuiCLEMButtons.this.matiteclasse.source.getValue().getROIs(sorted);
+					//In 2D
 					if (((GuiCLEMButtons.this.matiteclasse.mode3D==false)&&listRoisource.size()>2)||((GuiCLEMButtons.this.matiteclasse.mode3D==true)&&listRoisource.size()>3))
 					{
 				
@@ -466,10 +468,14 @@ public class GuiCLEMButtons extends JPanel {
 						Matrix backto_ori=correctedtransfo.inverse();
 						// In that case the orisize is actually the pixel size where it comes from, i.e before that it was reversed to backupsource
 						SimilarityTransformation3D reversetransfo=new SimilarityTransformation3D(backto_ori,orisizex,orisizey,orisizez);
-						
+						//correct source metadata
+						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeX(GuiCLEMButtons.this.matiteclasse.bucalibx);//TO DO rather by scale
+						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeY(GuiCLEMButtons.this.matiteclasse.bucaliby);
+						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeZ(GuiCLEMButtons.this.matiteclasse.bucalibz);
 						GuiCLEMButtons.this.matiteclasse.updateSourcePoints3D(reversetransfo); // use source calibration, that's why we make sure that we use the correct one here
 						
 						GuiCLEMButtons.this.matiteclasse.updateRoi();
+						
 					}
 					
 				// Reinitialize XML FILE
