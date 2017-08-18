@@ -1,0 +1,376 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<root>
+<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=355&pluginVersion=1.0.0.6]]></url><name>ec-CLEM</name><version>1.0.0.6</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=355&pluginVersion=1.0.0.6]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3838]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=3839]]></image_url><description><![CDATA[Align multidimensional images in 2D or 3D, rigidly or with warping, whatever the difference in scale. Provide also a set of tools for Correlative Light Electron Microscopy, but can be used for registration/alignement of any correlative imaging.]]></description><classname><![CDATA[plugins.perrine.easyclemv0.EasyCLEMv0]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+Version 1.0.0.6
+Date 2017-06-16 17:43:09
+
+-  adapt the code to 1.9.2 (fixing the bug report when pressing the stop button + Deprecated methods updated).
+
+
+-
+Version 1.0.0.5
+Date 2017-05-31 21:44:40
+
+- fix a few bugs (transformed saved image could not be saved, this is fixed + Some error regarding xml file reading taht should be fixed (could not reproduce..) . Please send any detail on the context and the console content when reporting this bug
+
+-
+Version 1.0.0.4
+Date 2017-04-11 12:42:51
+
+- remove extra message in the console
+
+-
+Version 1.0.0.3
+Date 2017-04-11 12:22:29
+
+- Now use draggable 3D ROI
+- Message can be removed (do not show again)
+- Now you need to RIGHT CLICK for validate a point after dragging on source image
+
+-
+Version 1.0.0.2
+Date 2017-04-11 12:21:27
+
+Regression from version 1.0.0.0
+
+-
+Version 1.0.0.1
+Date 2017-04-11 12:20:20
+
+- Now use draggable 3D ROI
+- Message can be removed (do not show again)
+- Now you need to RIGHT CLICK for validate a point after dragging on source image
+
+-
+Version 1.0.0.0
+Date 2017-03-24 18:42:20
+
+-- fixed some bugs (related to filenames created by autofinder)
+
+-- add the display of the TOTAL transform when pressing Stop (for similiarity only, 2D and 3D)
+
+- ImportRoiPointsFromFile and ConvertBinarytoPointRoi are now callable
+from protocols (blocks) to construct advanced registration workflow
+
+-Preprocess3Dstackto2D: make it robust to change of active sequence during processing
+
+-
+Version 0.2.1.2
+Date 2016-12-13 13:41:38
+
+Applytransformation: set also the output sequence for block protocol (was not set and was returning the same image when the transformation came from AUTOFINDER)
+
+-
+Version 0.2.1.1
+Date 2016-11-30 05:15:31
+
+-apply transform can now read the autofinder output transform
+- pixel size was not updated when applying a 2D transformation computed fro ec-clem, fixed
+
+-
+Version 0.2.1.0
+Date 2016-11-08 11:52:09
+
+- add the automatic reading of the current version and put it first line
+
+-
+Version 0.2.0.11
+Date 2016-10-16 22:40:34
+
+- progress bar also for non rigid and 3D let me update (was not running as background task)
+- Keep the LUT setting in 2D or 3D on the fly settings (remove autobound)
+
+
+-
+Version 0.2.0.10
+Date 2016-10-11 16:27:47
+
+- Preprocessing: Add a warning or set up instruction if EPFL plugin is not installed
+- Fix a small bug on non rigid registration (viewer related)
+
+-
+Version 0.2.0.9
+Date 2016-10-01 18:03:19
+
+- fixed few bugs
+
+-
+Version 0.2.0.8
+Date 2016-08-08 12:21:49
+
+- Modify the apply scaled transfo to get the full view of the transformed image
+- Change the conditions of error analysis
+- Stop the listeners to ROI when stopping ec-clem
+- Remove the limitation on different size for non rigid transformation
+
+-
+Version 0.2.0.7
+Date 2016-08-04 17:15:56
+
+fixed the wavy "warning" bug
+
+-
+Version 0.2.0.6
+Date 2016-08-04 15:19:26
+
+non beta
+
+-
+Version 0.2.0.5b
+Date 2016-08-04 14:32:22
+
+-bad class name for autofinder
+
+-
+Version 0.2.0.4b
+Date 2016-08-04 14:15:56
+
+Added more messages
+Added error study
+Correct a few bugs
+
+-
+Version 0.2.0.3
+Date 2016-07-29 17:25:07
+
+-change the roi definition such that in 3D, point as a new zd value (dispalyed in 3D) in additionn to z value (displayed on 2D slice) so that the 3D transform is more accurate when updated.
+- schanged the main iterface
+- add a plugin to validate the prediction of error done
+
+-
+Version 0.2.0.2
+Date 2016-07-21 17:17:07
+
+- Change the error map representation
+- Fix the 3D basis for Thin Plate Spline Non Rigid deformation
+- ENhance the 2D non rigid grid representation (thicker line), and correct the 3D grid)
+- Add an Advanced  Options button.
+- Modify the Apply a scale transfo with binning input rather than pixel size
+
+
+-
+Version 0.2.0.1
+Date 2016-07-12 18:32:15
+
+- change back width line for grid to 1.
+- AutoFinder is still in beta version
+
+-
+Version 0.2.0.0
+Date 2016-07-12 16:29:22
+
+- Add an autoFinder plugin (to Find Em area of interest on Lm for example)
+
+-
+Version 0.1.0.9
+Date 2016-07-08 13:22:31
+
+- Corect some bug,
+- add the 3D rotation, whatever the file format
+- Add block protocol to apply transformation
+
+-
+Version 0.1.0.8
+Date 2016-07-07 17:07:01
+
+- Add the non rigid transformation
+- Add an automatic detection of non rgid transformation needed or not
+- Add the possibility of monitoring a point on source point.
+- Fixed bugs
+
+-
+Version 0.1.0.7
+Date 2016-05-30 09:31:47
+
+fixed few bugs when unexpected user behaviour
+Add a monitor target point
+add a 2D and 3D pause mode (let me update myself)
+
+-
+Version 0.1.0.6
+Date 2016-04-20 12:17:40
+
+- make it compatible also with java 1.6 for older installation of java. In future version it is advised that you update  at least to java 1.7, 1.6 will not be supported anymore
+
+-
+Version 0.1.0.5b
+Date 2016-04-20 00:30:01
+
+- add the display on roi on original source file (to save roi for example)
+- add a pause mode (by chosing 3D but let le some time, no transfo will be computed unti 'update transfo ' is pressed. 
+
+-
+Version 0.1.0.4b
+Date 2016-03-10 16:51:23
+
+Added the very expected UNDO. You can reverse sevreal times, back to original image like this. The purpose is not to lose any point editio in case of badly placed point.
+
+-
+Version 0.1.0.3b
+Date 2016-02-09 17:37:36
+
+-add support of RGB images and fixed a bug with unsigned/signed type
+
+-
+Version 0.1.0.2b
+Date 2015-11-09 18:06:36
+
+- Added the support of multichannel images for the flatten option in preprocessing when calling EPFL plugin EDF.
+
+-
+Version 0.1.0.1b
+Date 2015-11-08 23:47:37
+
+- made some updates in ensure compatiblity with 1.7.2.0 (made it independnat from loci)+ changes due to ROI updtaes (but still compatible with previous version)
+
+-
+Version 0.1.0.0b
+Date 2015-09-25 18:21:40
+
+- Fix an error in 2D on TRE computation
+- Modify the display of error as difference in positions from circle to arrow.
+- Fix a bug on the 3D matrix computation
+-Add the version number on the gui interface
+-compiled with java 1.8 but tesing compliance to 1.6 or 1.7
+
+-
+Version 0.0.1.20b
+Date 2015-07-23 11:08:15
+
+3D/3D and 2D/3D 3D/2D is now enabled 
+
+-
+Version 0.0.1.19b
+Date 2015-06-29 03:09:58
+
+-3D transform correction (to take multichannel coorection into account) + degenerate case is processed: still some pb for the 3D to 2D 
+
+-
+Version 0.0.1.18b
+Date 2015-06-29 00:21:58
+
+Denoising parameters has been optimized based on the size of object of interest. A background substraction step have been added.
+
+-
+Version 0.0.1.17b
+Date 2015-06-14 20:40:00
+
+- Display problem solved (black images were created)
+- 3D registration is now working as 2D, but not yet totally for 3D to 2D projection
+
+-
+Version 0.0.1.16b
+Date 2015-06-12 17:07:15
+
+- BUG on 2D transform corrected
+- Preprocessing options added (interface is now simplified to 2D or 3D registration only)
+
+-
+Version 0.0.1.15b
+Date 2015-04-28 15:59:00
+
+- LUT (pb when conversion from a data type to the same datatype under soime conditions, to discussed with Stephane) : not convert when good type.
+
+-
+Version 0.0.1.14b
+Date 2015-04-24 15:14:30
+
+3D transform is now available (see doc)
+Warning1: update Transformation is recomputing scale and Anisotropie is not taken into account yet. This will be solved for te first Non Beta Version.
+
+Warning 2: LUT system has been updated in ICY core: this would have to be ckecked more carefully since it seems to have changed the Scalers as well.
+
+-
+Version 0.0.1.13b
+Date 2015-02-17 09:45:53
+
+compiled with java jre 1.6
+
+-
+Version 0.0.1.12b
+Date 2015-02-08 17:25:29
+
+- compiled in java 1.6 (was 1.8 from 1.9)
+
+
+-
+Version 0.0.1.11b
+Date 2015-02-02 13:45:08
+
+Fix a bug on the TRE value (was squared)
+
+-
+Version 0.0.1.10b
+Date 2015-01-15 14:09:23
+
+correct the jar file
+
+-
+Version 0.0.1.9b
+Date 2015-01-14 17:39:33
+
+- bug fixing
+- Correction of the TRE map and prediction
+
+-
+Version 0.0.1.8b
+Date 2014-11-04 16:16:35
+
+-LUT colormaps are respected in the overlay
+
+-
+Version 0.0.1.7b
+Date 2014-10-31 17:54:03
+
+-Robustness add to some unexpected user behaviour (such as button pressed etc...)
+
+-
+Version 0.0.1.6b
+Date 2014-10-30 17:22:00
+
+- LUT is now respected while adding points
+- interface have been changed.
+- source window will kept the same size as target window after the first transfo.
+- TRE map has now a common color code (green <100 nm of registration error, blue for >1000nm, red to yellow between)
+- WARNING: 3D still to be tested (not to be tested in this version).
+
+-
+Version 0.0.1.5b
+Date 2014-10-17 17:31:25
+
+-correct a bug for overlay at the end when image types were different
+
+-
+Version 0.0.1.4b
+Date 2014-10-17 17:09:11
+
+- Error Map is now in Float (compatible with Fiji/Icy 32 bits format)
+- An overlay of the two current view is proposed while pressing stop.
+
+-
+Version 0.0.1.3b
+Date 2014-10-16 18:17:35
+
+Support 3D stack (still 2D registration) , Movie, and Multi Channel for source image to be transformed.
+Error on position circle corrected (were half the size)
+Interface simplified.
+
+-
+Version 0.0.1.2b
+Date 2014-10-01 10:50:55
+
+none
+
+-
+Version 0.0.1.1b
+Date 2014-10-01 10:40:56
+
+- flipping taken into account, changes (combined transfo) applied to the original image every time, target can be smaller than source.
+
+-
+Version 0.0.1.0b
+Date 2014-09-10 14:02:27
+
+
+
+]]></changelog><web><![CDATA[http://icy.bioimageanalysis.org/plugin/ec-CLEM]]></web><dependencies><dependency><classname>plugins.nchenouard.tvdenoising.TVDenoising</classname></dependency><dependency><classname>plugins.adufour.ezplug.EzPlug</classname></dependency><dependency><classname>plugins.adufour.filtering.FilterToolbox</classname></dependency><dependency><classname>plugins.stef.tools.overlay.ColorBar</classname></dependency><dependency><classname>plugins.adufour.protocols.Protocols</classname></dependency><dependency><classname>plugins.perrine.ecclemautofinder.EcclemAutoFinder</classname></dependency><dependency><classname>plugins.tprovoost.scale.Scale</classname></dependency><dependency><classname>plugins.perrine.orthoviewerroi.OrthoViewerRoi</classname></dependency></dependencies></root>

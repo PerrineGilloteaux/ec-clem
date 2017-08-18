@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<root>
+<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=418&pluginVersion=1.0.0.1]]></url><name>Ec-Clem AUTOFINDER</name><version>1.0.0.1</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=418&pluginVersion=1.0.0.1]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4189]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4190]]></image_url><description><![CDATA[Automatic registration in 2D or 3D based on detection or binary mask. ]]></description><classname><![CDATA[plugins.perrine.ecclemautofinder.EcclemAutoFinder]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+Version 1.0.0.1
+Date 2017-04-11 12:25:34
+
+- use new 3D ROI icy
+- Message can be removed (do not show again)
+
+
+-
+Version 1.0.0.0
+Date 2017-03-24 18:41:08
+
+
+-- Add a new option to go on the registration with ECCLEM, allowing to
+then performed NONRIGID transformation from the automatically paitred
+points, or to generate error maps.
+
+-- SAVE paired and matching Rois in csv files , in installation directory of icy
+
+-- remove the limitation to 100 um of maximum distance
+
+-
+Version 0.0.2.1
+Date 2016-12-13 13:44:10
+
+
+- propose automatically to set the maximum distance to about 10 pixels ( biggest pixels), expressed in micrometers
+--remove the limit of 10 um for maximum distance
+
+-
+Version 0.0.2.0
+Date 2016-11-30 05:42:57
+
+- Modify ConvertbinarytoRoi so it can take Rois as well as inut (in addition to binary images), plus allow a resampling at the desired resolution.
+- Autofinder: changed the ransac procedure such that sampling are unique + distance-based.
+- bug correction on the find candidates
+- set few rules to avoid too few points to be matched.
+
+-
+Version 0.0.1.6
+Date 2016-11-08 11:53:31
+
+- Add an interactive metadatacheck (as it is very important for autofinder) 
+- Add the version number at the beginning
+
+-
+Version 0.0.1.5
+Date 2016-10-16 22:47:03
+
+-correct typos.
+
+-
+Version 0.0.1.4
+Date 2016-10-02 11:54:19
+
+-corrected an inversion in the wizard
+
+-
+Version 0.0.1.3
+Date 2016-10-01 18:05:16
+
+- made the computatio more robust
+- Add a wizard tool
+
+-
+Version 0.0.1.2
+Date 2016-08-08 11:06:57
+
+- Made it compliant with Java 1.6 >.
+- Added 2 parameters to adjust registration, also in block for protocols.
+- Corrected the matching process
+
+
+-
+Version 0.0.1.1
+Date 2016-08-04 15:20:01
+
+non beta
+
+-
+Version 0.0.1.0b
+Date 2016-08-04 15:04:26
+
+
+
+]]></changelog><web><![CDATA[http://icy.bioimageanalysis.org/plugin/Ec-Clem_AUTOFINDER]]></web><dependencies><dependency><classname>plugins.perrine.easyclemv0.EasyCLEMv0</classname></dependency></dependencies></root>

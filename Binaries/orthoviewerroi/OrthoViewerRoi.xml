@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<root>
+<url><![CDATA[http://icy.bioimageanalysis.org/repository/getXMLPluginFile2.php?pluginId=450&pluginVersion=0.0.1.1]]></url><name>OrthoViewerROI3D</name><version>0.0.1.1</version><required_kernel_version></required_kernel_version><kernel_ver></kernel_ver><jar_url><![CDATA[http://icy.bioimageanalysis.org/repository/getJarFile2.php?pluginId=450&pluginVersion=0.0.1.1]]></jar_url><icon_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4676]]></icon_url><image_url><![CDATA[http://bioimageanalysis.org/icy/image.php?idAttach=4677]]></image_url><description><![CDATA[Similary to classical OrthoViewer from Alexandre Dufour from which this Canvas is an extension, you can browse your data in xy plan, xz and yz plan. The main difference is that you can place and drag 3D Roi points on these views.
+Comes with EC-CLEM.]]></description><classname><![CDATA[plugins.perrine.orthoviewerroi.OrthoViewerRoi]]></classname><author><![CDATA[perrine - Perrine Paul-Gilloteaux]]></author><changelog><![CDATA[-
+Version 0.0.1.1
+Date 2017-06-02 09:58:16
+
+- make it compliant with Java > 1.6 (was only for Java 1.8)
+
+-
+Version 0.0.1.0
+Date 2017-05-31 17:20:49
+
+
+
+]]></changelog><web><![CDATA[http://icy.bioimageanalysis.org/plugin/OrthoViewerROI3D]]></web><dependencies></dependencies></root>
