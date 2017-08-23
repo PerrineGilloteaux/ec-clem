@@ -108,8 +108,8 @@ public class Stack3DVTKTransformer implements Runnable {
 					this.transfo3D.SetElement(i, j, Transfo.get(i, j));
 				}
 		}
-		this.scalexy=scalexy;
-		this.scalez=scalez;
+		this.setScalexy(scalexy);
+		this.setScalez(scalez);
 	}
 
 	/**
@@ -656,5 +656,21 @@ public void setDestinationsize(int w,int h,int z, double spacingx, double spacin
 	this.spacingz=spacingz;
 	this.recenter=recenter;
 	
+}
+
+public double getScalexy() {
+	return scalexy;
+}
+
+public void setScalexy(double scalexy) {
+	this.scalexy = scalexy;
+}
+
+public double getScalez() {
+	return scalez;
+}
+
+public void setScalez(double scalez) {
+	this.scalez = scalez;
 }
 }

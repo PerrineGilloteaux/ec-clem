@@ -1414,6 +1414,12 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		// Matrix transfo = newtransfo.getMatrix();
 
 		Document document = XMLUtil.loadDocument(XMLFile);
+		if (document==null){
+			MessageDialog.showDialog(
+					"The document where to write the transfo could not be loaded:  \n "+ XMLFile.getPath() +"\n Check if the source image was saved on disk first, /n and if you have writing rights on the directory mentionned above",
+					MessageDialog.QUESTION_MESSAGE);
+			return;
+		}
 		Element transfoElement = XMLUtil.addElement(document.getDocumentElement(), "MatrixTransformation");
 
 		XMLUtil.setAttributeIntValue(transfoElement, "order", order);

@@ -24,9 +24,7 @@ import java.io.FileNotFoundException;
 import icy.gui.dialog.MessageDialog;
 import icy.gui.frame.progress.ToolTipFrame;
 import icy.preferences.ApplicationPreferences;
-import icy.roi.ROI;
-import icy.roi.ROI3D;
-import plugins.kernel.roi.roi2d.ROI2DPoint;
+
 import plugins.kernel.roi.roi3d.ROI3DPoint;
 import icy.sequence.Sequence;
 import icy.type.point.Point5D;

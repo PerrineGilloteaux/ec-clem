@@ -60,7 +60,7 @@ import vtk.vtkTransformPolyDataFilter;
 import vtk.vtkUnsignedCharArray;
 import vtk.vtkUnsignedIntArray;
 import vtk.vtkUnsignedShortArray;
-import vtk.vtkVertexGlyphFilter;
+
 
 public class TransformBasedonCameraView extends EzPlug {
 	EzVarSequence source;

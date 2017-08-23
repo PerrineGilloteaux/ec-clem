@@ -17,7 +17,7 @@
  * AUthor: Perrine.Paul-Gilloteaux@curie.fr
  * Main Class can be used alone or call from another plugin: 
  * will apply the transform content in an xml file as in easyclem,
- * but specifying if the orginal scae has changed (both for source and target)
+ * but specifying if the orginal scale has changed (both for source and target)
  */
 
 package plugins.perrine.easyclemv0;
@@ -200,7 +200,7 @@ public class ApplyTransfotoScaledImage extends EzPlug {
 				"MatrixTransformation");
 		// int nbtransfo=transfoElementArrayList.size();
 		ArrayList<Matrix> listoftransfo = new ArrayList<Matrix>();
-		boolean firsttime=true;
+		
 		//Matrix ScaleSourcetransfo=Matrix.identity(4, 4).times(sourcescale);
 		//Matrix Scaletargettransfo=Matrix.identity(4, 4).times(1.0/targetscale);
 		Matrix ScaleSourcetransfo=Matrix.identity(4, 4).times(sourcescale);
@@ -209,25 +209,27 @@ public class ApplyTransfotoScaledImage extends EzPlug {
 		Matrix Scaletargettransfo=Matrix.identity(4, 4).times(1.0/targetscale);
 		Scaletargettransfo.set(3,3,1.0);
 		Scaletargettransfo.set(2,2,1.0);//do not touch z
-		listoftransfo.add(ScaleSourcetransfo);
+		//listoftransfo.add(ScaleSourcetransfo);
 		// the default value of orisizex has to the actual pixel size:
 		// otherwise during the initialisation (i.e the first tranform 
 		//when getcombined transform has nothing to return
 		double orisizex=source.getValue().getPixelSizeX();
 		double orisizey=source.getValue().getPixelSizeY();
 		double orisizez=source.getValue().getPixelSizeZ();
-		
+		Element transfoElementf=transfoElementArrayList.get(0);
+		double orisizexbinned=XMLUtil.getAttributeDoubleValue(transfoElementf, "formerpixelsizeX", 0);
+		//double orisizeybinned=XMLUtil.getAttributeDoubleValue(transfoElementf, "formerpixelsizeY", 0);
+		//double orisizezbinned=XMLUtil.getAttributeDoubleValue(transfoElementf, "formerpixelsizeZ", 0);
+		if ((orisizex==orisizexbinned)&&(sourcescale!=1)){
+			listoftransfo.add(ScaleSourcetransfo);
+			System.out.println("Warning something strange happened to your metadata. Check your binned metadata and these one.");
+		}
 		for (Element transfoElement : transfoElementArrayList) {
 			double[][] m = new double[4][4];
 			// int order = XMLUtil.getAttributeIntValue( transfoElement, "order"
 			// , -1 ); //to be check for now only: has to be used!!!
 			// the only different pixel size (i.e the orginal source size) is given only at the first transformation
-			if (firsttime){
-				//orisizex=XMLUtil.getAttributeDoubleValue(transfoElement, "formerpixelsizeX", 0);
-				//orisizey=XMLUtil.getAttributeDoubleValue(transfoElement, "formerpixelsizeY", 0);
-				//orisizez=XMLUtil.getAttributeDoubleValue(transfoElement, "formerpixelsizeZ", 0);
-				firsttime=false;
-			}
+			
 			
 			m[0][0] = XMLUtil.getAttributeDoubleValue(transfoElement, "m00", 0);
 			m[0][1] = XMLUtil.getAttributeDoubleValue(transfoElement, "m01", 0);
@@ -259,9 +261,7 @@ public class ApplyTransfotoScaledImage extends EzPlug {
 			CombinedTransfo = listoftransfo.get(i).times(CombinedTransfo);
 		}
 		
-		//orisizex=orisizex*sourcescale;
-		//orisizey=orisizey*sourcescale;
-		//orisizez=orisizez*sourcescale;
+		
 		SimilarityTransformation3D resulttransfo=new SimilarityTransformation3D(CombinedTransfo,orisizex,orisizey,orisizez);
 		return resulttransfo;
 	
@@ -287,7 +287,7 @@ public class ApplyTransfotoScaledImage extends EzPlug {
 		ArrayList<Element> transfoElementArrayList = XMLUtil.getElements( root , "MatrixTransformation" );
 
 		ArrayList<Matrix> listoftransfo=new ArrayList<Matrix>();
-		Matrix ScaleSourcetransfo=Matrix.identity(4, 4).times(sourcescale*sourcescale);
+		Matrix ScaleSourcetransfo=Matrix.identity(4, 4).times(1*sourcescale);
 		ScaleSourcetransfo.set(3,3,1.0);
 		ScaleSourcetransfo.set(2,2,1.0);//do not touch z
 		Matrix Scaletargettransfo=Matrix.identity(4, 4).times(1.0/targetscale);

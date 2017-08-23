@@ -43,7 +43,7 @@ import icy.gui.frame.progress.AnnounceFrame;
 import icy.gui.util.GuiUtil;
 
 import icy.roi.ROI;
-import icy.roi.ROIUtil;
+
 import icy.sequence.Sequence;
 import icy.sequence.SequenceUtil;
 import icy.type.point.Point5D;
@@ -52,6 +52,7 @@ import plugins.adufour.ezplug.EzLabel;
 import plugins.adufour.ezplug.EzPlug;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.ezplug.EzVarText;
+import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
 
 // mode 3D is not implemented here
 public class ComputeLeaveOneOut extends EzPlug {
@@ -231,7 +232,9 @@ public class ComputeLeaveOneOut extends EzPlug {
 			for (ROI roi : listfiducials) {
 				i++;
 
-				Point5D p3D = ROIUtil.getMassCenter(roi);
+				Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+				if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
+					p3D = roi.getPosition5D();
 				if (Double.isNaN(p3D.getX()))
 					p3D = roi.getPosition5D(); // some Roi does not have gravity
 												// center such as points
@@ -263,7 +266,9 @@ public class ComputeLeaveOneOut extends EzPlug {
 			for (ROI roi : listfiducials) {
 				i++;
 
-				Point5D p3D = ROIUtil.getMassCenter(roi);
+				Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+				if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
+					p3D = roi.getPosition5D();
 				if (Double.isNaN(p3D.getX()))
 					p3D = roi.getPosition5D(); // some Roi does not have gravity
 												// center such as points
@@ -350,22 +355,7 @@ public class ComputeLeaveOneOut extends EzPlug {
 					SimilarityRegistrationAnalytic meanfiducialsalgo = new SimilarityRegistrationAnalytic();
 					newtransfo = meanfiducialsalgo.apply(fiducialsvector);
 					
-					double Sangle = newtransfo.getS();
-					double Cangle = newtransfo.getC();
-					double dx = newtransfo.getdx();
-					double dy = newtransfo.getdy();
-					double scale = newtransfo.getscale();
-					// write xml file
-					Matrix transfo = newtransfo.getMatrix();
-
-					/*ImageTransformer mytransformer = new ImageTransformer();
-
-					mytransformer.setImageSource(source.getValue());
 					
-					mytransformer.setParameters(transfo);
-					mytransformer.setDestinationsize(target.getValue().getWidth(),
-							target.getValue().getHeight());
-					mytransformer.run();*/
 					// set the calibration to target calibration
 					double pixelsizexum = target.getValue().getPixelSizeX();
 					double pixelsizeyum = target.getValue().getPixelSizeY();
@@ -651,7 +641,7 @@ public class ComputeLeaveOneOut extends EzPlug {
 					curve.add(predictederror,error);
 					return check;
 				}	
-				private boolean CheckTREvsFRE(PointsPair3D leftpoint, String name ) {
+				/*private boolean CheckTREvsFRE(PointsPair3D leftpoint, String name ) {
 					//For each ROI
 					boolean check=false;
 					//Compute FRE and compute TRE
@@ -679,7 +669,7 @@ public class ComputeLeaveOneOut extends EzPlug {
 					
 				
 					return check;
-				}	
+				}	*/
 				/**
 				 * 
 				 * @return max error between point localisation on registered image, or 200nm (for fluo resolution) OR the pixel size by default if no point pair.

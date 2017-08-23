@@ -17,6 +17,7 @@ import icy.image.IcyBufferedImage;
 
 import icy.sequence.Sequence;
 import icy.type.collection.array.Array1DUtil;
+import icy.type.collection.array.Array2DUtil;
 
 public class SmartMerge extends EzPlug {
   EzVarSequence inputseq=new EzVarSequence("ImageTovisualize");
@@ -55,25 +56,42 @@ public class SmartMerge extends EzPlug {
 		
 		IcyBufferedImage result = new IcyBufferedImage(sequence.getSizeX(),sequence.getSizeY(),sequence.getSizeC(), sequence.getDataType_());
 		double[] doubleArray= new double[sequence.getSizeX()*sequence.getSizeY()];
+		double[][] imgAllCArray=new double[sequence.getSizeC()][doubleArray.length];
 		
+		Object dataArray=sequence.getDataXYC(t, z);
+		for (int c1=0; c1<sequence.getSizeC();c1++){
+			
+			
+			imgAllCArray=Array2DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
+			
+		}
+		// remove overlapped area
 		for (int c=0; c<sequence.getSizeC();c++){
-			Object dataArray=sequence.getDataXY(t, z, c);
-			double[] imgDoubleArray=Array1DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
-			for (int i=0;i<imgDoubleArray.length;i++){
+			
+			for (int i=0;i<doubleArray.length;i++){
+				
 				if (doubleArray[i]>0){
 					doubleArray[i]=0;
 				    
 				}
 				else{
-					doubleArray[i]=imgDoubleArray[i];
+					
+					doubleArray[i]=imgAllCArray[c][i];
+					for (int pc=0;pc<c;pc++){
+						if (imgAllCArray[pc][i]>0){
+							doubleArray[i]=0;
+							break;
+						}
+					}
 				}
-
 					
 			}
+
 			//ArrayMath.max(doubleArray,imgDoubleArray,doubleArray2);
 			//ArrayMath.subtract(doubleArray2,doubleArray,doubleArray);
-			Array1DUtil.doubleArrayToArray(doubleArray,result.getDataXY(c))	;	
+			Array1DUtil.doubleArrayToArray(doubleArray,result.getDataXY(c))	;
 		}
+			
 		
 		result.dataChanged();
 		return result;

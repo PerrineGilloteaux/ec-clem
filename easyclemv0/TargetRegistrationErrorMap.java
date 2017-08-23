@@ -23,9 +23,9 @@ import icy.image.IcyBufferedImage;
 import icy.image.colormap.FireColorMap;
 
 import icy.image.lut.LUT;
-import icy.main.Icy;
+
 import icy.roi.ROI;
-import icy.roi.ROIUtil;
+
 import icy.sequence.Sequence;
 import icy.system.thread.ThreadUtil;
 import icy.type.point.Point5D;
@@ -37,6 +37,7 @@ import java.util.ArrayList;
 
 //import plugins.kernel.roi.roi2d.ROI2DEllipse;
 import Jama.Matrix;
+import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
 //import icy.main.Icy;
 //import icy.math.Scaler;
 import plugins.stef.tools.overlay.ColorBarOverlay;
@@ -536,8 +537,9 @@ void ReadFiducials(double[][] points, Sequence seq)	{
 			// {
 			i++;
 
-			Point5D p3D = ROIUtil.getMassCenter(roi); //TODO change it to ROIMassCenterDescriptorsPlugin at some point
-			// if nan (mass centerpoint ne pas rajouter
+			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
+				p3D = roi.getPosition5D();
 			if (Double.isNaN(p3D.getX()))
 				p3D = roi.getPosition5D(); // some Roi does not have gravity
 											// center such as points
