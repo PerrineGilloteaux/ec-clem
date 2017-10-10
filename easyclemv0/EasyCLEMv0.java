@@ -57,7 +57,7 @@ import plugins.kernel.roi.roi3d.plugin.ROI3DPointPlugin;
 
 import icy.canvas.IcyCanvas;
 import icy.canvas.IcyCanvas2D;
-
+import icy.gui.dialog.ConfirmDialog;
 import icy.gui.dialog.MessageDialog;
 import icy.gui.frame.progress.AnnounceFrame;
 import icy.gui.frame.progress.ToolTipFrame;
@@ -535,10 +535,18 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 								source.getValue().removeROI(roi);
 								removed = true;
 							}
+							if (roi.getName().contains("Point3D")) {
+								source.getValue().removeROI(roi);
+								removed = true;
+							}
 						}
 						listroi = target.getValue().getROIs();
 						for (ROI roi : listroi) {
 							if (roi.getName().contains("Point2D")) {
+								target.getValue().removeROI(roi);
+								removed = true;
+							}
+							if (roi.getName().contains("Point3D")) {
 								target.getValue().removeROI(roi);
 								removed = true;
 							}
@@ -548,13 +556,11 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 						GetTargetPointsfromROI();
 						if (removed)
 							new AnnounceFrame(
-									"All points named Point2D and likely not added by you have been removed. Re click now on \"apply transform\"");
+									"All points named Point2D or Point3D and likely not added by you have been removed. Re click now on \"apply transform\"");
 						if (sourcepoints.length != targetpoints.length) {
-							MessageDialog.showDialog(
-									"The number of points of ROI in source and target image are different. EasyClem will suppose you forgot to erase any reamining landmarks.\n "
-											+ "If it was not the case, juste close and reopen the image, and add missing landmarks (check the ROI tab). Undo otherwise.");
-							source.getValue().removeAllROI();
-							target.getValue().removeAllROI();
+							MessageDialog.showDialog("Number of points", 
+									"The number of points of ROI in source and target image are different. \n Check your ROI points and update transfo ");
+							
 
 						}
 						Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
@@ -682,6 +688,10 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * This method will create an ordered array for the target points
 	 */
 	void GetTargetPointsfromROI() {
+		if (target.getValue() == null) {
+			MessageDialog.showDialog("Make sure target image is openned");
+			return;
+		}
 		target.getValue().removeListener(this);
 		ArrayList<ROI> listfiducials = target.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
@@ -730,11 +740,12 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * This method will create an ordered array for the source points
 	 */
 	void GetSourcePointsfromROI() {
-		source.getValue().removeListener(this);
 		if (source.getValue() == null) {
 			MessageDialog.showDialog("Make sure source image is openned");
 			return;
 		}
+		source.getValue().removeListener(this);
+		
 		ArrayList<ROI> listfiducials = source.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
 			ROI roi = listfiducials.get(i);
@@ -796,6 +807,16 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		if (targetseq == sourceseq) {
 			MessageDialog.showDialog(
 					"You have selected the same sequence for target sequence and source sequence. \n Check the IMAGES to PROCESS selection");
+			return;
+		}
+		if (sourceseq == null) {
+			MessageDialog.showDialog(
+					"No sequence selected for Source. \n Check the IMAGES to PROCESS selection");
+			return;
+		}
+		if (targetseq == null) {
+			MessageDialog.showDialog(
+					"No sequence selected for Target. \n Check the IMAGES to PROCESS selection");
 			return;
 		}
 		GetSourcePointsfromROI();

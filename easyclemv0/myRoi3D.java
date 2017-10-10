@@ -2,7 +2,7 @@
  * Copyright 2010-2017 Perrine Paul-Gilloteaux, CNRS.
  * Perrine.Paul-Gilloteaux@univ-nantes.fr
  * 
- * This file is part of EC-CLEM.
+ * This file is part of EC-CLEM. NOT used but set for retrocompatibility purpose.
  * 
  * you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -443,5 +443,4 @@ public  class myRoi3D extends ROI2DPoint
 	   
 	 
 	    
-	}
-
+}

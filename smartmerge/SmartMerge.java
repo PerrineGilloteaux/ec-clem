@@ -12,18 +12,21 @@ package plugins.perrine.smartmerge;
 
 import plugins.adufour.ezplug.EzPlug;
 import plugins.adufour.ezplug.EzVarSequence;
-
+import plugins.adufour.ezplug.EzVarText;
 import icy.image.IcyBufferedImage;
-
+import icy.math.ArrayMath;
 import icy.sequence.Sequence;
 import icy.type.collection.array.Array1DUtil;
 import icy.type.collection.array.Array2DUtil;
 
 public class SmartMerge extends EzPlug {
   EzVarSequence inputseq=new EzVarSequence("ImageTovisualize");
+  private EzVarText choiceblendingmethod= new EzVarText("Method to be used",
+			new String[] { "Crop (first channel, first kept)", "Max value", "averaged" }, 0, false);
 	@Override
 	protected void initialize() {
 		addEzComponent(inputseq);
+		addEzComponent(choiceblendingmethod);
 	}
 
 	@Override
@@ -33,12 +36,30 @@ public class SmartMerge extends EzPlug {
 		result.beginUpdate();
 		try
 		{
+			if (choiceblendingmethod.getValue()=="Crop (first channel, first kept)"){
 			for (int t=0;t<sequence.getSizeT();t++){
 				for (int z=0;z<sequence.getSizeZ();z++){
-				IcyBufferedImage image= getBlended(sequence,t,z);
+				IcyBufferedImage image= getBlendedfirstserved(sequence,t,z);
 				result.setImage(t, z, image);
 				}
 			}
+			}
+			if (choiceblendingmethod.getValue()=="Max value"){
+				for (int t=0;t<sequence.getSizeT();t++){
+					for (int z=0;z<sequence.getSizeZ();z++){
+					IcyBufferedImage image= getBlendedmax(sequence,t,z);
+					result.setImage(t, z, image);
+					}
+				}
+				}
+			if (choiceblendingmethod.getValue()=="averaged"){
+				for (int t=0;t<sequence.getSizeT();t++){
+					for (int z=0;z<sequence.getSizeZ();z++){
+					IcyBufferedImage image= getBlendedaverage(sequence,t,z);
+					result.setImage(t, z, image);
+					}
+				}
+				}
 		}
 		finally
 		{
@@ -50,7 +71,7 @@ public class SmartMerge extends EzPlug {
 		addSequence(result);
 	}
 
-	private IcyBufferedImage getBlended(Sequence sequence, int t,int z)
+	private IcyBufferedImage getBlendedfirstserved(Sequence sequence, int t,int z)
 	{
 		
 		
@@ -59,12 +80,12 @@ public class SmartMerge extends EzPlug {
 		double[][] imgAllCArray=new double[sequence.getSizeC()][doubleArray.length];
 		
 		Object dataArray=sequence.getDataXYC(t, z);
-		for (int c1=0; c1<sequence.getSizeC();c1++){
+		
 			
 			
-			imgAllCArray=Array2DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
+		imgAllCArray=Array2DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
 			
-		}
+		
 		// remove overlapped area
 		for (int c=0; c<sequence.getSizeC();c++){
 			
@@ -98,7 +119,100 @@ public class SmartMerge extends EzPlug {
 		
 	}
 	
+	private IcyBufferedImage getBlendedmax(Sequence sequence, int t,int z)
+	{
+		
+		
+		IcyBufferedImage result = new IcyBufferedImage(sequence.getSizeX(),sequence.getSizeY(),sequence.getSizeC()+1, sequence.getDataType_());
+		double[] doubleArray= new double[sequence.getSizeX()*sequence.getSizeY()];
+		double[][] imgAllCArray=new double[sequence.getSizeC()][doubleArray.length];
+		
+		Object dataArray=sequence.getDataXYC(t, z);
+		
+			
+			
+		imgAllCArray=Array2DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
+			
+		double[] maxchannel=new double[doubleArray.length];
+		
+		for (int c=0;c<sequence.getSizeC();c++){
+			for (int i=0;i<doubleArray.length;i++){
+				// detect overlap
+				if ((imgAllCArray[c][i]!=0))
+				{
+						doubleArray[i]+=1;
+						
+					    if (imgAllCArray[c][i]>maxchannel[i])
+							maxchannel[i]=imgAllCArray[c][i];
+				}
+			}
+		}
+		for (int c=0;c<sequence.getSizeC();c++){
+			for (int i=0;i<doubleArray.length;i++){
+				if (doubleArray[i]>1){
+					imgAllCArray[c][i]=0;
+					
+				}
+				else 
+					maxchannel[i]=0;
+			}	
+			Array1DUtil.doubleArrayToArray(imgAllCArray[c],result.getDataXY(c))	;
+		
+		}
 	
+		Array1DUtil.doubleArrayToArray(maxchannel,result.getDataXY(sequence.getSizeC()))	;
+		result.dataChanged();
+		return result;
+		
+	}
+	private IcyBufferedImage getBlendedaverage(Sequence sequence, int t,int z)
+	{
+		
+		
+		IcyBufferedImage result = new IcyBufferedImage(sequence.getSizeX(),sequence.getSizeY(),sequence.getSizeC()+1, sequence.getDataType_());
+		double[] doubleArray= new double[sequence.getSizeX()*sequence.getSizeY()];
+		double[][] imgAllCArray=new double[sequence.getSizeC()][doubleArray.length];
+		
+		Object dataArray=sequence.getDataXYC(t, z);
+		
+			
+			
+		imgAllCArray=Array2DUtil.arrayToDoubleArray(dataArray, sequence.isSignedDataType());
+			
+		double[] maxchannel=new double[doubleArray.length];
+		
+		
+			for (int i=0;i<doubleArray.length;i++){
+				for (int c=0;c<sequence.getSizeC();c++){
+				// detect overlap
+				if ((imgAllCArray[c][i]!=0))
+				{
+						doubleArray[i]+=1;
+						maxchannel[i]+=imgAllCArray[c][i];
+				}
+			}
+				if (maxchannel[i]>0)
+					maxchannel[i]=maxchannel[i]/doubleArray[i];
+				
+		}
+		for (int c=0;c<sequence.getSizeC();c++){
+			for (int i=0;i<doubleArray.length;i++){
+				if (doubleArray[i]>1){
+					imgAllCArray[c][i]=0;
+					
+				}
+				else 
+					maxchannel[i]=0;
+			}	
+			Array1DUtil.doubleArrayToArray(imgAllCArray[c],result.getDataXY(c))	;
+		
+		}
+	
+		Array1DUtil.doubleArrayToArray(maxchannel,result.getDataXY(sequence.getSizeC()))	;
+		result.dataChanged();
+		return result;
+		
+	}
 
 	@Override
 	public void clean() {

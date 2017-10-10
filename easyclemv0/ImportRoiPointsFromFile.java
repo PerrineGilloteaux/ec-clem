@@ -55,7 +55,9 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 	private double converttopixelZ;
 	private EzVarText choiceinputsection= new EzVarText("Unit of the points in csv file",
 			new String[] { "millimeters", "micrometers","nanometers" ,"pixels" }, 2, false);
-	private EzVarBoolean choicez= new EzVarBoolean("Z in Slice # (as from IJ/Fiji)",
+	private EzVarText choicefileformat= new EzVarText("csv file content looks like:",
+			new String[] { "x;y;z", "x,y,z" }, 1, false);
+	private EzVarBoolean choicez= new EzVarBoolean("Z in Slice # (as from IJ/Fiji, starts at 1)",
 			false);
 	;
 
@@ -95,8 +97,11 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 			 br = new BufferedReader(new FileReader(csvfile.getValue()));
 			String line;
 			String cvsSplitBy = ";";
+			if (choicefileformat.getValue()=="x,y,z")
+				cvsSplitBy = ",";
 			int index=1;
 			//converttopixelZ=0;
+			try{
 			while ((line = br.readLine()) != null) {
 
 			        // use comma as separator
@@ -129,6 +134,10 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 				index=index+1;
 
 			}
+			} catch (ArrayIndexOutOfBoundsException e) {
+				MessageDialog.showDialog("check the format of your file \n (open it in text editor):\n It should be x;y;z or x,y,z \n and that you have selected the right format");
+				e.printStackTrace();
+			} 
 			index=index-1;
 			MessageDialog.showDialog("Number of Roi added: "+index );
 		} catch (FileNotFoundException e) {
@@ -173,6 +182,7 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 		
 		addEzComponent(csvfile);
 		addEzComponent(choiceinputsection);
+		addEzComponent(choicefileformat);
 		addEzComponent(choicez);
 		addEzComponent(source);
 		// we will express everything in pixel, by using a converttopixel factor
@@ -194,6 +204,8 @@ public class ImportRoiPointsFromFile extends EzPlug implements Block{
 		inputMap.add("CSV File to import",csvfile.getVariable());
 		
 		inputMap.add("unit",choiceinputsection.getVariable());
+		inputMap.add("format",choicefileformat.getVariable());
+		inputMap.add("z fiji",choicez.getVariable());
 	}
 
 	@Override

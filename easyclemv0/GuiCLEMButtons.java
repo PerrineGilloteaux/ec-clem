@@ -47,7 +47,7 @@ import javax.swing.JButton;
 
 
 import java.awt.event.ActionListener;
-
+import java.io.File;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 
@@ -176,9 +176,30 @@ public class GuiCLEMButtons extends JPanel {
 				}
 				else{
 				new AnnounceFrame("All ROIs have been deleted from images "+GuiCLEMButtons.this.matiteclasse.source.getValue().getName()+" and "+ GuiCLEMButtons.this.matiteclasse.target.getValue().getName(),5);
+				saveROI(GuiCLEMButtons.this.matiteclasse.source.getValue());
+				
 				deleteROI(GuiCLEMButtons.this.matiteclasse.source.getValue());
+				saveROI(GuiCLEMButtons.this.matiteclasse.target.getValue());
 				deleteROI(GuiCLEMButtons.this.matiteclasse.target.getValue());
 				}
+			}
+
+			private void saveROI(Sequence value) {
+				// TODO Auto-generated method stub
+				final List<ROI> rois = value.getROIs();
+
+                if (rois.size() > 0)
+                {
+                    final Document doc = XMLUtil.createDocument(true);
+
+                    if (doc != null)
+                    {
+                        ROI.saveROIsToXML(XMLUtil.getRootElement(doc), rois);
+                        System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsaved.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
+                        XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsaved.xml");
+                        
+                    }
+}
 			}
 
 			private void deleteROI(Sequence value) {
