@@ -227,7 +227,7 @@ public class ImageTransformer implements Runnable {
 			//image = IcyBufferedImageUtil.getARGBImage(imagetobemodified.getImage(c));
 				image=IcyBufferedImageUtil.toBufferedImage(imagetobemodified.getImage(c), BufferedImage.TYPE_INT_ARGB);
 			}
-			imageDest = new BufferedImage(imagetobemodified.getWidth(), imagetobemodified.getHeight(),
+			imageDest = new BufferedImage(imagetobekept.getWidth(), imagetobekept.getHeight(),
 					BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2d = imageDest.createGraphics();
 			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
