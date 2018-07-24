@@ -1051,7 +1051,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 				// sequence.
 			}
-			source.getValue().setAutoUpdateChannelBounds(true);
+			//source.getValue().setAutoUpdateChannelBounds(true);
 			
 			// we apply the previous combined transfo to the orginal image
 			// before applying the new transfo in order to avoid bad cropping of

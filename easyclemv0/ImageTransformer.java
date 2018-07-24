@@ -24,10 +24,11 @@ import Jama.Matrix;
 import icy.gui.frame.progress.ProgressFrame;
 import icy.image.IcyBufferedImage;
 import icy.image.IcyBufferedImageUtil;
-
+import icy.math.Scaler;
 import icy.sequence.Sequence;
 import icy.sequence.SequenceUtil;
 import icy.type.DataType;
+import icy.type.collection.array.Array1DUtil;
 
 /**
  * 
@@ -36,12 +37,28 @@ import icy.type.DataType;
  *         This class ImageTransformer is part of EasyClem but could be used as
  *         a library. In this beta version, it makes use of Graphics2D This one was created
  *         during Icy coding party, with the help of Stéphane and Fabrice 2D!
+ *         
+ *         23/07/2018: update for better range conservation.
+ *         tested with 
+ *         Unsigned bit (8 bit) : no loss
+ *         signed bit (7 bit + one signed bit): some slight loss
+ *         unsigned short (16 bit): no loss
+ *         signed short (15 bit plus 1 bit sign): no loss
+ *         unsigned int: some slight loss
+ *         signed int some slight loss
+ *         float some slight loss
+ *         double :some slight loss
+ *         
+ *         For lossy conversion, rather use ApplytransformationtoROI if you need an accurate measurement. 
+ *         
+ *         MultiChannel Unsigned and signed byte OK
+ *         Unsigned short OK
  * 
  */
 public class ImageTransformer implements Runnable {
 
 	AffineTransform transform;
-	Image image;
+	BufferedImage image;
 	double[] matrix;
 
 	private Sequence sequence;
@@ -113,7 +130,7 @@ public class ImageTransformer implements Runnable {
 	 */
 	public void setDestinationsize(int width, int height) {
 		imageDest = new BufferedImage(width, height,
-				BufferedImage.TYPE_BYTE_GRAY);
+				BufferedImage.TYPE_INT_ARGB);
 
 	}
 
@@ -141,9 +158,7 @@ public class ImageTransformer implements Runnable {
 				for (int z = 0; z < nbz; z++) {
 					
 					
-					// PB de CHANGEMENT DE TAILLE de SEQUENCE? regarder crop?
-					// + pour memoire ou temps le faire uniquement sur les
-					// images affichées?
+					
 					IcyBufferedImage image = transformIcyImage(newseq, t, z);
 					
 					sequence.setImage(t, z, image);
@@ -170,16 +185,57 @@ public class ImageTransformer implements Runnable {
 				imageDest.getWidth(), imageDest.getHeight(),
 				imagetobemodified.getSizeC(), imagetobemodified.getDataType_());
 		for (int c = 0; c < nbChannels; c++) {
-
-			image = IcyBufferedImageUtil.getARGBImage(imagetobemodified
-					.getImage(c));
-			
+			/*
+			 * if data are not 8 bit, then we convert each byte in a separate channel for conversion
+			 */
+			if (imagetobemodified.getImage(c).getDataType_().getBitSize()==16)
+			{
+				
+						
+				/*final double[] darray = Array1DUtil.arrayToDoubleArray(imagetobemodified.getDataXY(c), imagetobemodified.isSignedDataType());
+				int[] red=new int[darray.length];
+				int[] green=new int[darray.length];
+				int[] blue=new int[darray.length];
+				for (int i=0;i< darray.length;i++){
+					red[i]   = ((int)darray[i] & 0x00ff0000) >> 16;
+				 green[i] = ((int)darray[i]  & 0x0000ff00) >> 8;
+				  blue[i]  =  (int)darray[i]  & 0x000000ff;
+				
+				}*/
+				
+				IcyBufferedImage tmp = IcyBufferedImageUtil.convertToType(imagetobemodified.getImage(c), DataType.INT, false);
+				tmp.dataChanged();
+				image = new BufferedImage(imagetobemodified.getWidth(), imagetobemodified.getHeight(), BufferedImage.TYPE_INT_ARGB );
+				if (imagetobemodified.isSignedDataType()){
+					for (int x=0;x<image.getWidth();x++)
+						for (int y=0;y<image.getHeight();y++)
+						{
+							//add numbers to make it positive
+							image.setRGB(x, y,  -(tmp.getDataAsInt(x, y, 0)+32767));//short max
+						}
+				}
+				else{
+					for (int x=0;x<image.getWidth();x++)
+						for (int y=0;y<image.getHeight();y++)
+						//convertshort unsigned
+							image.setRGB(x, y,  -tmp.getDataAsInt(x, y, 0));
+					}
+				//image.dataChanged();
+					
+			}
+			else{
+			//image = IcyBufferedImageUtil.getARGBImage(imagetobemodified.getImage(c));
+				image=IcyBufferedImageUtil.toBufferedImage(imagetobemodified.getImage(c), BufferedImage.TYPE_INT_ARGB);
+			}
+			imageDest = new BufferedImage(imagetobemodified.getWidth(), imagetobemodified.getHeight(),
+					BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2d = imageDest.createGraphics();
 			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
 					RenderingHints.VALUE_INTERPOLATION_BICUBIC);// BICUBIC plutot? was bilinear
 			g2d.drawImage(image, transform, null);
 			g2d.dispose();
-			IcyBufferedImage icyImage = IcyBufferedImage.createFrom(imageDest);
+			
+			//IcyBufferedImage icyImage = IcyBufferedImage.createFrom(imageDest);
 			// convert with rescale
 			// This was the antibug which is now causing a bug since 1.6.11 icy core update
 			// double boundsDst[] = imagetobemodified.getImage(c)
@@ -194,10 +250,37 @@ public class ImageTransformer implements Runnable {
 			// ICI: se debrouiller pour que l'instensité reste la meme qu'avant
 			//icyImage = IcyBufferedImageUtil.convertToType(icyImage, oriType,
 					//scaler);
+			if (imagetobemodified.getImage(c).getDataType_().getBitSize()==16){	
+			//copy data: not optimized for now.
+				if (imagetobemodified.isSignedDataType()){
+					for (int x=0;x<imageDest.getWidth();x++)
+						for (int y=0;y<imageDest.getHeight();y++){
+							//back to short signed
+							imagetobekept.setData(x, y, c, -(imageDest.getRGB(x, y))-32767);//short max
+						
+					}
+				}
+				else{
+					for (int x=0;x<imageDest.getWidth();x++)
+						for (int y=0;y<imageDest.getHeight();y++){
+						imagetobekept.setData(x, y, c, -imageDest.getRGB(x, y));
+					}
+						
+				}
+				imagetobekept.dataChanged();
 					
-		
+			}
+			else{
+				IcyBufferedImage icyImage = IcyBufferedImage.createFrom(imageDest);
 			if (icyImage.getDataType_()!=oriType)
-			{final IcyBufferedImage tmp= IcyBufferedImageUtil.convertToType(icyImage, oriType, false,true);
+			{
+			
+				//double boundsDst[] = oriType.getBounds();
+				double boundsDst[] = imagetobemodified.getImage(c).getChannelsGlobalBounds();
+				Scaler scaler= new Scaler(0, 255,boundsDst[0], boundsDst[1], false);
+				//Scaler arrayScaler[]=new Scaler[1];
+				//arrayScaler[0]=scaler;
+			final IcyBufferedImage tmp= IcyBufferedImageUtil.convertToType(icyImage, oriType, scaler);
 			tmp.dataChanged();
 			imagetobekept.copyData(tmp, 0, c);
 			imagetobekept.dataChanged();
@@ -207,6 +290,7 @@ public class ImageTransformer implements Runnable {
 				tmp.dataChanged();
 				imagetobekept.copyData(tmp, 0, c);
 				imagetobekept.dataChanged();
+			}
 			}
 			
 			// sequence.setImage(0, 0, icyImage);

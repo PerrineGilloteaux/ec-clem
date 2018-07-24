@@ -1,5 +1,5 @@
 /**
- * Copyright 2010-2017 Perrine Paul-Gilloteaux, CNRS.
+ * Copyright 2010-2018 Perrine Paul-Gilloteaux, CNRS.
  * Perrine.Paul-Gilloteaux@univ-nantes.fr
  * 
  * This file is part of EC-CLEM.
@@ -36,6 +36,7 @@ public class AdvancedEcClemOptions extends EzPlug  {
 	EzVarText choiceplugin = new EzVarText("List of plugin utilities", new String[] {
 			"AutoFinder (help me to find my cell from EM to LM)",
 			"Apply a reduced scaled transform to a full size image",
+			"Transform ROIs, not the images",
 			"Import Roi from csv file (Amira or other)", "Create a protocol",
 			"Study errors (leave one out vs predicted)",
 			"Study errors (study influence of N and FLE)"}, 0, false);
@@ -63,7 +64,7 @@ public class AdvancedEcClemOptions extends EzPlug  {
 			}
 		}
 		if (choiceplugin.getValue() == "Apply a reduced scaled transform to a full size image"){
-			//launch autofinder
+			//launch scaled transform
 			for (final PluginDescriptor pluginDescriptor : PluginLoader
 					.getPlugins()) {
 				
@@ -76,7 +77,20 @@ public class AdvancedEcClemOptions extends EzPlug  {
 				}
 			}
 		}
-		
+		if (choiceplugin.getValue() == "Transform ROIs, not the images"){
+			//launch ROI transforms
+			for (final PluginDescriptor pluginDescriptor : PluginLoader
+					.getPlugins()) {
+				
+				if (pluginDescriptor.getSimpleClassName()
+						.compareToIgnoreCase("ApplyTransformationtoRoi") == 0) {
+					ThreadUtil.invokeLater(new Runnable() {
+						public void run() {
+					PluginLauncher.start(pluginDescriptor);
+						}});
+				}
+			}
+		}
 		if (choiceplugin.getValue() == "Study errors (leave one out vs predicted)"){
 			//launch autofinder
 			for (final PluginDescriptor pluginDescriptor : PluginLoader
