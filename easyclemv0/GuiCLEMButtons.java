@@ -33,8 +33,11 @@ import plugins.kernel.roi.roi2d.plugin.ROI2DPointPlugin;
 
 import javax.swing.JPanel;
 
+import org.apache.commons.io.FileUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import com.google.common.io.Files;
 
 import Jama.Matrix;
 
@@ -48,6 +51,7 @@ import javax.swing.JButton;
 
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 
@@ -195,8 +199,8 @@ public class GuiCLEMButtons extends JPanel {
                     if (doc != null)
                     {
                         ROI.saveROIsToXML(XMLUtil.getRootElement(doc), rois);
-                        System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsaved.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
-                        XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsaved.xml");
+                        System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsavedBeforeClearLandmarks.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
+                        XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsavedBeforeClearLandmarks.xml");
                         
                     }
 }
@@ -500,7 +504,15 @@ public class GuiCLEMButtons extends JPanel {
 					}
 					
 				// Reinitialize XML FILE
-					
+					//AND CREATE A COPY of the former one for back up with the date
+					File dest=new File(GuiCLEMButtons.this.matiteclasse.XMLFile.getPath()+"_"+java.time.LocalDateTime.now().getDayOfMonth()+"_"+java.time.LocalDateTime.now().getMonth()+"_"+java.time.LocalDateTime.now().getHour()+java.time.LocalDateTime.now().getMinute()+"_back-up.xml");
+					System.out.println("A back up of your transfo has been saved as"+GuiCLEMButtons.this.matiteclasse.XMLFile.getPath()+"_"+java.time.LocalDateTime.now().getDayOfMonth()+"_"+java.time.LocalDateTime.now().getMonth()+"_"+java.time.LocalDateTime.now().getHour()+java.time.LocalDateTime.now().getMinute()+"_back-up.xml");
+					try {
+						Files.copy(GuiCLEMButtons.this.matiteclasse.XMLFile, dest);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					Document myXMLdoc = XMLUtil.createDocument(true);
 					Element transfoElement = XMLUtil.addElement(
 							myXMLdoc.getDocumentElement(), "TargetSize");
@@ -518,10 +530,33 @@ public class GuiCLEMButtons extends JPanel {
 						XMLUtil.setAttributeDoubleValue(transfoElement, "sz" , GuiCLEMButtons.this.matiteclasse.target.getValue()
 								.getPixelSizeZ() );
 					}
+					
+					
 					XMLUtil.saveDocument(myXMLdoc, GuiCLEMButtons.this.matiteclasse.XMLFile);
 					System.out.println("Saved as"+GuiCLEMButtons.this.matiteclasse.XMLFile.getPath());
+					
+					saveRois(GuiCLEMButtons.this.matiteclasse.source.getValue());
+					saveRois(GuiCLEMButtons.this.matiteclasse.target.getValue());
 			}
 				}
+			}
+
+			private void saveRois(Sequence value) {
+				
+				final List<ROI> rois = value.getROIs();
+
+                if (rois.size() > 0)
+                {
+                    final Document doc = XMLUtil.createDocument(true);
+
+                    if (doc != null)
+                    {
+                        ROI.saveROIsToXML(XMLUtil.getRootElement(doc), rois);
+                        System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsavedwhenshowonoriginaldata.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
+                        XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsavedwhenshowonoriginaldata.xml");
+                        
+                    }
+}
 			}
 			});
 		

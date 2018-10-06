@@ -70,10 +70,10 @@ public class StudyLandmarksConfagainstN extends EzPlug implements EzStoppable {
 
 	private EzVarSequence source;
 
-	EzVarDouble uFLE=new EzVarDouble("Fiducial localisation error in nm", 200,0,10000,10);
-	EzVarDouble Nvalue=new EzVarDouble("max N Value to be tested", 200,0,10000,10);
+	EzVarDouble uFLE=new EzVarDouble("Fiducial localisation error in nm", 200,10,10000,10);
+	EzVarDouble Nvalue=new EzVarDouble("max N Value to be tested", 20,4,10000,10);
 	EzVarInteger simulnumber = new EzVarInteger("Nb MonteCarlo Simulations",100, 10, 10000, 10);
-	EzVarInteger radius = new EzVarInteger("Radius in nanometers",1000, 10, 10000, 10);
+	EzVarInteger radius = new EzVarInteger("Radius in nanometers",1000, 0, 1000000, 10);
 	EzVarFile savedfile=new EzVarFile("Indicate the csv file to create to save the results", ".");
 	Sequence target;
 	EzVarText choiceinputsection = new EzVarText("I want to study the transformation in:",
@@ -148,7 +148,7 @@ public class StudyLandmarksConfagainstN extends EzPlug implements EzStoppable {
 		ArrayList<double[]> mydata =new ArrayList<double[]>();
 		for (int mc=1;mc<simulnumber.getValue()+1;mc++){
 		for (int n=4;n<Nvalue.getValue()+1; n=n+2){
-			for (int fle=10;fle<uFLE.getValue()+1;fle=fle+20){
+			for (int fle=10;fle<uFLE.getValue()+1;fle=fle+50){
 				CreateSourcePoint(centerpoint,radius.getValue(),n);
 				if (n==20){
 					DisplayPointRois(sourcepoints);
@@ -202,7 +202,7 @@ private void CreateSourcePoint(Point5D centerpoint,int radius, int n) {
 	}
 }
 private void DisplayPointRois(double[][] sourcepoints2) {
-	double sizex=source.getValue().getPixelSizeX()*1000;
+	double sizex=source.getValue().getPixelSizeX()*1000;// in nm
 	double sizez=source.getValue().getPixelSizeZ()*1000;
 for (int i=0;i<sourcepoints2.length;i++)
 {

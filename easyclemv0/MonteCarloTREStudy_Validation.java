@@ -19,6 +19,8 @@ package plugins.perrine.easyclemv0;
  * or non rig transformation based on monteCarlo Simulation to mimick the Fiducial localisation error
  * TODO implement  the 3D config. started
  * Added the comparison with thin plate spline transform (leave one out discrepancy)
+ * TODO toujours le bug sur alpha: corriger roi2D en 3D des le début...
+ *  
  */
 
 import java.awt.BasicStroke;
@@ -91,7 +93,7 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 
 	private EzVarSequence source;
 	EzVarBoolean withFLE=new EzVarBoolean("Including target localisation error",false);
-	EzVarDouble uFLE=new EzVarDouble("Fiducial localisation error in nm", 200,0,10000,10);
+	EzVarDouble uFLE=new EzVarDouble("Fiducial localisation error in nm", 200,0,10000000,10);
 	EzVarInteger simulnumber = new EzVarInteger("Nb MonteCarlo Simulations",100, 10, 10000, 10);
 	Sequence target;
 	EzVarText choiceinputsection = new EzVarText("I want to study the transformation in:",
@@ -107,9 +109,8 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 	private ArrayList<ROI> backuproisource;
 	boolean stopflag;
 	Random generator= new Random();
-	JPanel mainPanel = GuiUtil.generatePanel("Graph");
-	IcyFrame mainFrame = GuiUtil.generateTitleFrame("Real configuration Error MC Simulations", mainPanel, new Dimension(300, 100), true, true, true,
-	            true);
+	JPanel mainPanel ;
+	IcyFrame mainFrame ;
 	private YIntervalSeries curve1;
 	private YIntervalSeries curve2;
 	private YIntervalSeries curve3;
@@ -198,9 +199,7 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 		boolean nonrigid=false;
 		if (choiceinputsection.getValue().contains("compare with non Rigid")) // also test non rigid
 			nonrigid=true; 
-		mainPanel = GuiUtil.generatePanel("Graph");
-		mainFrame = GuiUtil.generateTitleFrame("Real configuration Error MC Simulations", mainPanel, new Dimension(300, 100), true, true, true,
-		            true);
+		
 		// step 1: backup source sequence, and backup ROIs
 		stopflag=false;
 		sourceseq=source.getValue();
@@ -242,12 +241,20 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 		this.backupsourcepoints = new double[this.sourcepoints.length][3];
 		for (int i=0;i<this.targetpoints.length;i++){
 			for( int j=0;j<3;j++){
-		this.backuptargetpoints[i][j]=this.targetpoints[i][j];
-		this.backupsourcepoints[i][j]=this.sourcepoints[i][j];
+				this.backuptargetpoints[i][j]=this.targetpoints[i][j];
+				this.backupsourcepoints[i][j]=this.sourcepoints[i][j];
 			}
-			this.backuproitarget.add(new ROI3DPoint(target.getROIs().get(i).getPosition5D()));
-			
-			this.backuproisource.add(new ROI3DPoint(sourceseq.getROIs().get(i).getPosition5D()));
+			ROI3DPoint tmproit=new ROI3DPoint(target.getROIs().get(i).getPosition5D());
+			tmproit.setName(target.getROIs().get(i).getName());
+			// tmp fix for ROI2D point returning menus infinity: to be checked: how is z read whn -infinity
+			if (tmproit.getPosition5D().getZ()<0)
+				tmproit.getPosition5D().setZ(0);
+			this.backuproitarget.add(tmproit);
+			ROI3DPoint tmprois=new ROI3DPoint(sourceseq.getROIs().get(i).getPosition5D());
+			tmprois.setName(sourceseq.getROIs().get(i).getName());
+			if (tmprois.getPosition5D().getZ()<0)
+				tmprois.getPosition5D().setZ(0);
+			this.backuproisource.add(tmprois);
 		}
 		// Step 2: Compute transform with all points
 		
@@ -297,10 +304,16 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 				ArrayList<ROI> tmpcopyroisource=new ArrayList<ROI>();
 				ArrayList<ROI> tmpcopyroitarget=new ArrayList<ROI>();
 				for (int i=0;i<this.backupsourcepoints.length;i++){
-					
-					tmpcopyroisource.add(new ROI3DPoint(this.backuproitarget.get(i).getPosition5D()));
-					
-					tmpcopyroitarget.add(new ROI3DPoint(this.backuproisource.get(i).getPosition5D()));
+					ROI3DPoint tmproit=new ROI3DPoint(this.backuproitarget.get(i).getPosition5D());
+					tmproit.setName(this.backuproitarget.get(i).getName());
+					if (tmproit.getPosition5D().getZ()<0)
+						tmproit.getPosition5D().setZ(0);
+					tmpcopyroisource.add(tmproit);
+					ROI3DPoint tmprois=new ROI3DPoint(this.backuproisource.get(i).getPosition5D());
+					tmprois.setName(this.backuproisource.get(i).getName());
+					if (tmprois.getPosition5D().getZ()<0)
+						tmprois.getPosition5D().setZ(0);
+					tmpcopyroitarget.add(tmprois);
 				}
 				if (stopflag)break;
 			target.removeAllROI();
@@ -445,6 +458,9 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 	    chartPanel.setFillZoomRectangle(true);
 	    chartPanel.setMouseWheelEnabled(true);
 	    chartPanel.setPreferredSize(new Dimension(500, 270));
+	    mainPanel = GuiUtil.generatePanel("Graph");
+		mainFrame = GuiUtil.generateTitleFrame("Real configuration Error MC Simulations", mainPanel, new Dimension(300, 100), true, true, true,
+		            true);
 	    mainPanel.add(chartPanel);
 
 	    mainFrame.pack();
@@ -521,8 +537,11 @@ private Point2D shakeOnePoint(Sequence seq, double FLE, Point2D point) {
 			//Gaussian generation (generarted centered at 0 with std 1
 			position.setX(position.getX()+(generator.nextGaussian() * (higher/2)));
 			position.setY(position.getY()+(generator.nextGaussian() * (higher/2)));
-			if (mode3D)
+			if (mode3D){
 				position.setZ(position.getZ()+(Math.random() * (higherz-lowerz)) + lowerz);
+			}
+			else
+				position.setZ(0);
 			roi.setPosition5D(position);
 		}
 		
@@ -640,24 +659,17 @@ private Point2D shakeOnePoint(Sequence seq, double FLE, Point2D point) {
 			int i = -1;
 			for (ROI roi : listfiducials) {
 				i++;
-
-				Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-				if (Double.isNaN(p3D.getX()))
-					p3D = roi.getPosition5D(); // some Roi does not have gravity
-												// center such as points
-				if (roi.getClassName()=="plugins.perrine.easyclemv0.myRoi3D")
-					p3D=roi.getPosition5D();
-				if (roi.getClassName()=="plugins.kernel.roi.roi2d.ROI2DPoint")
-					p3D=roi.getPosition5D();
+				// BUG?? in ICY: position of a point is NOT is gravity center...
+				
+					Point5D p3D = roi.getPosition5D(); 
+				
+				
 				this.targetpoints[i][0] = p3D.getX();
 				this.targetpoints[i][1] = p3D.getY();
-				this.targetpoints[i][2] = p3D.getZ();
-				//if (target.getValue().getSizeZ()==1){
-				//	this.targetpoints[i][2] =1.0;
-				//}
-				//else{
-					this.targetpoints[i][2]=p3D.getZ();
-				//}
+				this.targetpoints[i][2] = p3D.getZ(); //2D only for now
+				if (this.targetpoints[i][2]<0){
+					this.targetpoints[i][2]=0;
+				}
 			}
 		}
 		/**
@@ -677,22 +689,15 @@ private Point2D shakeOnePoint(Sequence seq, double FLE, Point2D point) {
 			for (ROI roi : listfiducials) {
 				i++;
 
-				Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-				if (roi.getClassName()=="plugins.perrine.easyclemv0.myRoi3D")
-					p3D=roi.getPosition5D();
-				if (roi.getClassName()=="plugins.kernel.roi.roi2d.ROI2DPoint")
-					p3D=roi.getPosition5D();
-				if (Double.isNaN(p3D.getX()))
-					p3D = roi.getPosition5D(); // some Roi does not have gravity
-												// center such as points
+				Point5D p3D = roi.getPosition5D();
+				
 				this.sourcepoints[i][0] = p3D.getX();
 				this.sourcepoints[i][1] = p3D.getY();
-				//if (sourceseq.getSizeZ()==1){
-				//	this.sourcepoints[i][2] =1.0;
-				//}
-				//else{
-					this.sourcepoints[i][2]=p3D.getZ();
-				//}
+				
+				this.sourcepoints[i][2]=p3D.getZ();
+				if (this.sourcepoints[i][2]<0){
+					this.sourcepoints[i][2]=0;
+				}
 					                  
 			}
 
@@ -728,7 +733,7 @@ private Point2D shakeOnePoint(Sequence seq, double FLE, Point2D point) {
 			// could have been thinking differently
 			SimilarityTransformation2D newtransfo = null ;
 			if ((fiducialsvector.size() > 2) || (fiducialsvector3D.size() > 3)) {
-				double back_up_pixelsizex=sourceseq.getPixelSizeX();
+				double back_up_pixelsizex=sourceseq.getPixelSizeX(); //in um
 				double back_up_pixelsizey=sourceseq.getPixelSizeY();
 				double back_up_pixelsizez=sourceseq.getPixelSizeZ();
 			

@@ -1871,7 +1871,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 							vout.getLut().getLutChannel(sourcenchannel + c).getColorMap()
 									.copyFrom(targetlut.getLutChannel(c).getColorMap());
 
-						if (mode3D)
+						if (mode3D)// merge data and show source and target original with point on it.
 							new AnnounceFrame(
 									"Only the current z have been overlayed. Use the Merge Channel option if you want to create an overlay of the full stacks",
 									5);

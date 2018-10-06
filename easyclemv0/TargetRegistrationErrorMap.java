@@ -81,7 +81,10 @@ public class TargetRegistrationErrorMap implements Runnable {
  */
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
+		//added to avoid a bug report when no ROI or not enough ROI.
+		if (this.sequence.getROIs().size()<3){
+			MessageDialog.showDialog("You need at least 4 points to compute an error map ");
+		}
 		ReadFiducials(this.sequence);
 		//fiducial is read in nm
 		// DisplayFiducials(sequence);
@@ -516,7 +519,7 @@ void ReadFiducials(double[][] points, Sequence seq)	{
 	void ReadFiducials(Sequence seq) {
 		this.sequence=seq;
 		ArrayList<ROI> listfiducials = seq.getROIs();
-
+		
 		fiducials = new double[listfiducials.size()][3];
 		// fiducials=new double[10][3];
 		int i = -1;
