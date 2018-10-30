@@ -122,7 +122,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 	private EzLabel versioninfo = new EzLabel("Version " +this.getDescriptor().getVersion());
 	
 	private EzVarText choicemode = new EzVarText("Transform Mode:",
-			new String[] { "About the same content in both n-D images","Find small part in bigger field of view","Find small part in bigger field of view Reverse"}, 0, false);
+			new String[] { "Already in the same orientation","About the same content in both n-D images","Find small part in bigger field of view","Find small part in bigger field of view Reverse"}, 0, false);
 	EzVarBoolean showtarget = new EzVarBoolean(" Also show the transformed target on source",false);
 	EzVarBoolean exporttoecclem = new EzVarBoolean(" Export results for further analysis in ec-clem",false);
 	EzVarDouble distvar=new EzVarDouble("Max error allowed for testing in microns",1,0,1000000,1);
@@ -279,7 +279,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 		System.out.println("Distance max "+dist+ "microns");
 		System.out.println("Proportion "+proportion.getValue()+ "%");
 		// if mode 1 : actually not use
-		if (choicemode.getValue()=="SimpleICPRANSAC"){
+		if (choicemode.getValue()=="Already in the same orientation"){
 			
 			// just do ICP and Ransac where candidates and ROI is the whole image
 			//TODO an option such as Points placed very roughly against accurately detection
@@ -300,6 +300,7 @@ public class EcclemAutoFinder extends EzPlug implements Block, EzStoppable {
 				//one way
 				vtkTransform aligned=ReorientSourcepointandComputeRadius(false);
 				vtkTransform reorientingTargetPoint=ReorientCandidatesTargetpoints(targetpoint);
+				//vtkTransform aligned=new vtkTransform();
 				//vtkTransform reorientingTargetPoint=new vtkTransform();
 				vtkTransformPolyDataFilter trup=new  vtkTransformPolyDataFilter();
 				trup.SetInputData(targetpoint);
@@ -2157,7 +2158,7 @@ private List<Integer> generateRandomPointsList( int nbpointransac, int orinbpoin
 							"<br>"+
 							"</html>", "helpautofinder"
 					);
-			
+			setTimeDisplay(true);
 			addEzComponent(versioninfo);
 			target= new EzVarSequence("Select Target Image with Rois on it");
 			source=new EzVarSequence("Select Source Image with Rois on it");
