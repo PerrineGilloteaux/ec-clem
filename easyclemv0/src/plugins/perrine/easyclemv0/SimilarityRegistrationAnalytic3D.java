@@ -66,11 +66,8 @@ public class SimilarityRegistrationAnalytic3D {
 		fiducialsE = fiducials.elements();
 		while (fiducialsE.hasMoreElements()) {
 			PointsPair3D pair = (PointsPair3D) fiducialsE.nextElement();
-			pair.first.setLocation(pair.first.getX() - smeanx,
-					pair.first.getY() - smeany, pair.first.getZ()- smeanz);
-			pair.second.setLocation(pair.second.getX() - tmeanx,
-					pair.second.getY() - tmeany, pair.second.getZ()- tmeanz);
-
+			pair.first.setLocation(pair.first.getX() - smeanx, pair.first.getY() - smeany, pair.first.getZ()- smeanz);
+			pair.second.setLocation(pair.second.getX() - tmeanx, pair.second.getY() - tmeany, pair.second.getZ()- tmeanz);
 		}
 
 		// Determine scaling factor by comparing mean vector length CAREFUL
@@ -78,18 +75,14 @@ public class SimilarityRegistrationAnalytic3D {
 		double meanlengthfirst = 0;
 		double meanlengthsecond = 0;
 		fiducialsE = fiducials.elements();
-
 		while (fiducialsE.hasMoreElements()) {
-
 			PointsPair3D pair = (PointsPair3D) fiducialsE.nextElement();
-			double normfirstsquared = (pair.first.getX() * pair.first.getX()
-					+ pair.first.getY() * pair.first.getY() + (pair.first.getZ() * pair.first.getZ()));
-			double normsecondsquared = (pair.second.getX() * pair.second.getX()
-					+ pair.second.getY() * pair.second.getY() +  pair.second.getZ() * pair.second.getZ());
+			double normfirstsquared = (pair.first.getX() * pair.first.getX() + pair.first.getY() * pair.first.getY() + (pair.first.getZ() * pair.first.getZ()));
+			double normsecondsquared = (pair.second.getX() * pair.second.getX() + pair.second.getY() * pair.second.getY() +  pair.second.getZ() * pair.second.getZ());
 			meanlengthfirst += normfirstsquared;
 			meanlengthsecond += normsecondsquared;
-
 		}
+
 		double scale = Math.sqrt(meanlengthsecond / meanlengthfirst);
 		//double scalevtk=1.0; // under the assumpution that the pixel size is correct: the 2 images are supposed to represent the same physical object
 		Matrix R = Matrix.identity(3, 3);
