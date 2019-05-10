@@ -47,6 +47,8 @@ import icy.gui.frame.progress.ToolTipFrame;
 import icy.preferences.ApplicationPreferences;
 import icy.sequence.Sequence;
 import icy.util.XMLUtil;
+import plugins.perrine.easyclemv0.image_transformer.ImageTransformer;
+import plugins.perrine.easyclemv0.image_transformer.Stack3DVTKTransformer;
 
 
 /**
@@ -162,7 +164,7 @@ public class ApplyTransfotoScaledImage extends EzPlug {
 			transfoimage3D.setImageSource(source.getValue(),transfo.getorisizex(),transfo.getorisizey(), transfo.getorisizez());
 			transfoimage3D.setDestinationsize(width, height, nbz,
 					targetsx, targetsy, targetsz);
-			transfoimage3D.setParameters(transfomat,transfo.getscalex(),transfo.getscalez());
+			transfoimage3D.setParameters(transfomat);
 			transfoimage3D.run();
 			
 

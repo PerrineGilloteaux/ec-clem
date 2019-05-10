@@ -1,14 +1,14 @@
 /**
  * Copyright 2010-2017 Perrine Paul-Gilloteaux, CNRS.
  * Perrine.Paul-Gilloteaux@univ-nantes.fr
- * 
+ *
  * This file is part of EC-CLEM.
- * 
+ *
  * you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  **/
 
 
@@ -33,13 +33,15 @@ import plugins.kernel.roi.roi2d.plugin.ROI2DPointPlugin;
 
 import javax.swing.JPanel;
 
-import org.apache.commons.io.FileUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.google.common.io.Files;
 
 import Jama.Matrix;
+import plugins.perrine.easyclemv0.image_transformer.ImageTransformer;
+import plugins.perrine.easyclemv0.image_transformer.Stack3DVTKTransformer;
+import plugins.perrine.easyclemv0.model.Dataset;
 
 import javax.swing.JButton;
 
@@ -56,12 +58,11 @@ import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 
 import java.util.List;
-import java.util.Vector;
 
 
 public class GuiCLEMButtons extends JPanel {
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	EasyCLEMv0 matiteclasse;
@@ -83,9 +84,9 @@ public class GuiCLEMButtons extends JPanel {
 					return;
 				}
 				else
-				
+
 				{
-					
+
 					GuiCLEMButtons.this.matiteclasse.GetSourcePointsfromROI();
 					GuiCLEMButtons.this.matiteclasse.GetTargetPointsfromROI();
 					if (GuiCLEMButtons.this.matiteclasse.sourcepoints.length!=GuiCLEMButtons.this.matiteclasse.targetpoints.length){
@@ -101,70 +102,72 @@ public class GuiCLEMButtons extends JPanel {
 								GuiCLEMButtons.this.matiteclasse.target.getValue().removeROI(roi);
 							}
 						}
-						
+
 						new AnnounceFrame("Warning: not the same number of point on both image. Nothing done",5);
-						
+
 					Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
 					}
-					else{
-					if (GuiCLEMButtons.this.matiteclasse.nonrigid==false){
-						if (GuiCLEMButtons.this.matiteclasse.sourcepoints.length==0)
-						{ 
-							MessageDialog.showDialog("No Roi on source image. Create ROI");
-							return;
-						}
-						if (GuiCLEMButtons.this.matiteclasse.targetpoints.length==0)
-						{ 
-							MessageDialog.showDialog("No Roi on target image. Create ROIs");
-							return;
-						}
-				
-						if (GuiCLEMButtons.this.matiteclasse.mode3D==false){
-					
-					
-							GuiCLEMButtons.this.matiteclasse.fiducialsvector = GuiCLEMButtons.this.matiteclasse.createVectorfromdoublearray(GuiCLEMButtons.this.matiteclasse.sourcepoints,
-									GuiCLEMButtons.this.matiteclasse.targetpoints);
-							GuiCLEMButtons.this.matiteclasse.fiducialsvector3D = new Vector<PointsPair3D>();
-						}
-						else //mode 3D
-						{
-							GuiCLEMButtons.this.matiteclasse.fiducialsvector3D = GuiCLEMButtons.this.matiteclasse.createVectorfromdoublearray3D(GuiCLEMButtons.this.matiteclasse.sourcepoints,
-							GuiCLEMButtons.this.matiteclasse.targetpoints);
-							GuiCLEMButtons.this.matiteclasse.fiducialsvector = new Vector<PointsPair>();
-						}
-				
-						ThreadUtil.bgRun(new Runnable(){
-							
+					else {
+						if (GuiCLEMButtons.this.matiteclasse.nonrigid==false){
+							if (GuiCLEMButtons.this.matiteclasse.sourcepoints.length==0)
+							{
+								MessageDialog.showDialog("No Roi on source image. Create ROI");
+								return;
+							}
+							if (GuiCLEMButtons.this.matiteclasse.targetpoints.length==0)
+							{
+								MessageDialog.showDialog("No Roi on target image. Create ROIs");
+								return;
+							}
+
+	//						if (GuiCLEMButtons.this.matiteclasse.mode3D==false){
+	//							GuiCLEMButtons.this.matiteclasse.fiducialsvector = GuiCLEMButtons.this.matiteclasse.createVectorfromdoublearray(
+	//								GuiCLEMButtons.this.matiteclasse.sourcepoints,
+	//								GuiCLEMButtons.this.matiteclasse.targetpoints
+	//							);
+	//							GuiCLEMButtons.this.matiteclasse.fiducialsvector3D = new Vector<PointsPair3D>();
+	//						}
+	//						else //mode 3D
+	//						{
+	//							GuiCLEMButtons.this.matiteclasse.fiducialsvector3D = GuiCLEMButtons.this.matiteclasse.createVectorfromdoublearray3D(
+	//								GuiCLEMButtons.this.matiteclasse.sourcepoints,
+	//								GuiCLEMButtons.this.matiteclasse.targetpoints
+	//							);
+	//							GuiCLEMButtons.this.matiteclasse.fiducialsvector = new Vector<PointsPair>();
+	//						}
+
+							double[][] sourcePointsFromRoi = GuiCLEMButtons.this.matiteclasse.getPointsFromRoi(GuiCLEMButtons.this.matiteclasse.source.getValue());
+							double[][] targetPointsFromRoi = GuiCLEMButtons.this.matiteclasse.getPointsFromRoi(GuiCLEMButtons.this.matiteclasse.target.getValue());
+							Dataset sourceDataset = new Dataset(sourcePointsFromRoi);
+							Dataset targetDataset = new Dataset(targetPointsFromRoi);
+
+							ThreadUtil.bgRun(new Runnable(){
+								@Override
 								public void run() {
-							GuiCLEMButtons.this.matiteclasse.ComputeTransfo();}
-						});
-					}
-					else
-					{
-						//non rigid
-						ThreadUtil.bgRun(new Runnable(){
-							
-							public void run() {
-						NonRigidTranformationVTK nrtransfo=new NonRigidTranformationVTK();
-						
-						
-						
-						nrtransfo.setImageSourceandpoints(GuiCLEMButtons.this.matiteclasse.checkgrid,GuiCLEMButtons.this.matiteclasse.source.getValue(), GuiCLEMButtons.this.matiteclasse.sourcepoints);
-						nrtransfo.setImageTargetandpoints(GuiCLEMButtons.this.matiteclasse.target.getValue(),GuiCLEMButtons.this.matiteclasse.targetpoints);
-						
-						nrtransfo.run();
-						
-						GuiCLEMButtons.this.matiteclasse.updateRoi();
-							}});
+									GuiCLEMButtons.this.matiteclasse.ComputeTransfo(sourceDataset, targetDataset);
+								}
+							});
+						} else {
+							ThreadUtil.bgRun(new Runnable(){
+								@Override
+								public void run() {
+									NonRigidTranformationVTK nrtransfo = new NonRigidTranformationVTK();
+									nrtransfo.setImageSourceandpoints(
+										GuiCLEMButtons.this.matiteclasse.checkgrid,
+										GuiCLEMButtons.this.matiteclasse.source.getValue(),
+										GuiCLEMButtons.this.matiteclasse.getPointsFromRoi(GuiCLEMButtons.this.matiteclasse.source.getValue())
+									);
+									nrtransfo.setImageTargetandpoints(
+										GuiCLEMButtons.this.matiteclasse.target.getValue(),
+										GuiCLEMButtons.this.matiteclasse.getPointsFromRoi(GuiCLEMButtons.this.matiteclasse.target.getValue())
+									);
+									nrtransfo.run();
+									GuiCLEMButtons.this.matiteclasse.updateRoi();
+								}
+							});
 						}
-					
 					}
 				}
-				
-				{
-					
-				}
-			
 			}
 		});
 		/**
@@ -181,7 +184,7 @@ public class GuiCLEMButtons extends JPanel {
 				else{
 				new AnnounceFrame("All ROIs have been deleted from images "+GuiCLEMButtons.this.matiteclasse.source.getValue().getName()+" and "+ GuiCLEMButtons.this.matiteclasse.target.getValue().getName(),5);
 				saveROI(GuiCLEMButtons.this.matiteclasse.source.getValue());
-				
+
 				deleteROI(GuiCLEMButtons.this.matiteclasse.source.getValue());
 				saveROI(GuiCLEMButtons.this.matiteclasse.target.getValue());
 				deleteROI(GuiCLEMButtons.this.matiteclasse.target.getValue());
@@ -201,19 +204,19 @@ public class GuiCLEMButtons extends JPanel {
                         ROI.saveROIsToXML(XMLUtil.getRootElement(doc), rois);
                         System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsavedBeforeClearLandmarks.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
                         XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsavedBeforeClearLandmarks.xml");
-                        
+
                     }
 }
 			}
 
 			private void deleteROI(Sequence value) {
-				
+
 				value.removeAllROI(true); // true means that this action can be undo from the undo manager
-				
+
 			}
 		});
 		/**
-		 * Button Undo 
+		 * Button Undo
 		 */
 		JButton btnButtonUndo = new JButton("Undo last point");
 		btnButtonUndo.setToolTipText("Press this button to cancel the last point edition you have done, it will reverse to the previous state of your image");
@@ -230,9 +233,9 @@ public class GuiCLEMButtons extends JPanel {
 					// for 2D
 					if (((GuiCLEMButtons.this.matiteclasse.mode3D==false)&&listRoisource.size()>2)||((GuiCLEMButtons.this.matiteclasse.mode3D==true)&&listRoisource.size()>3))
 					{
-					// remove last added ROI, 
-					
-					
+					// remove last added ROI,
+
+
 					List<ROI> listRoitarget =GuiCLEMButtons.this.matiteclasse.target.getValue().getROIs(sorted);
 					ROI roitoremove = listRoisource.get(listRoisource.size()-1);
 					roitoremove.remove();
@@ -254,9 +257,9 @@ public class GuiCLEMButtons extends JPanel {
 								.showDialog("Argh.");
 						return;
 					}
-					
+
 					try {
-						
+
 						for (int t = 0; t < GuiCLEMButtons.this.matiteclasse.backupsource.getSizeT(); t++) {
 							for (int z = 0; z < GuiCLEMButtons.this.matiteclasse.backupsource.getSizeZ(); z++) {
 
@@ -274,8 +277,8 @@ public class GuiCLEMButtons extends JPanel {
 						// sequence.
 					}
 					//in order to process the case of first transformation cancelle (in case of big rescaling in particular)
-					
-							
+
+
 					//for 2D
 					if (GuiCLEMButtons.this.matiteclasse.mode3D==false){
 					Matrix correctedtransfo=GuiCLEMButtons.this.matiteclasse.getCombinedTransfo(document);
@@ -286,12 +289,12 @@ public class GuiCLEMButtons extends JPanel {
 					//TODO when exciting: save Roi points on original source file for information (or ask if you ant to do so)
 					//remove last computed transfo from xml file
 					//transfo2D
-					
+
 					}
 					else{
 					//for 3D
 					//update roi positions (in Original sequence size!)
-						
+
 						Matrix correctedtransfo=GuiCLEMButtons.this.matiteclasse.getCombinedTransfo3D(document).getMatrix();
 						Matrix backto_ori=correctedtransfo.inverse();
 						// In that case the orisize is actually the pixel size where it comes from, i.e before that it was reversed to backupsource
@@ -300,7 +303,7 @@ public class GuiCLEMButtons extends JPanel {
 						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeY(GuiCLEMButtons.this.matiteclasse.bucaliby);
 						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeZ(GuiCLEMButtons.this.matiteclasse.bucalibz);
 						GuiCLEMButtons.this.matiteclasse.updateSourcePoints3D(reversetransfo); // use source calibration, that's why we make sure that we use the correct one here
-						
+
 						GuiCLEMButtons.this.matiteclasse.updateRoi();
 					}
 					//common
@@ -310,8 +313,8 @@ public class GuiCLEMButtons extends JPanel {
 					int maxorder=0;
 					int order=0;
 					for (Element transfoElement : transfoElementArrayList) {
-						
-						
+
+
 
 						order = XMLUtil.getAttributeIntValue(transfoElement, "order", 0);
 						if (maxorder<order)
@@ -322,17 +325,17 @@ public class GuiCLEMButtons extends JPanel {
 					}
 					//find element and remove it
 					for (Element transfoElement : transfoElementArrayList) {
-						
-						
+
+
 
 						order = XMLUtil.getAttributeIntValue(transfoElement, "order", 0);
 						if (maxorder==order){
 							org.w3c.dom.Node parent=transfoElement.getParentNode();
 							parent.removeChild(transfoElement);
 							parent.normalize();
-							
+
 						}
-						
+
 					}
 					transfoElementArrayList = XMLUtil.getElements(root,
 							"MatrixTransformation");
@@ -341,8 +344,8 @@ public class GuiCLEMButtons extends JPanel {
 					}
 					XMLUtil.saveDocument(document, GuiCLEMButtons.this.matiteclasse.XMLFile);
 					System.out.println("Saved as"+GuiCLEMButtons.this.matiteclasse.XMLFile.getPath());
-					
-					
+
+
 					Element newsizeelement = XMLUtil.getElements( root , "TargetSize" ).get(0);
 
 					int width = XMLUtil.getAttributeIntValue( newsizeelement, "width" , -1 );
@@ -356,15 +359,15 @@ public class GuiCLEMButtons extends JPanel {
 
 						mytransformer.setImageSource(GuiCLEMButtons.this.matiteclasse.source.getValue());
 						mytransformer.setParameters(CombinedTransfo);
-					
+
 						// warning here: if it was the first transformation , the destination size should be the original size
 						// we check this by the number of transf applied (i.e nothing left if it was the first
-						
+
 						if (transfoElementArrayList.size()>0)
 						{
 							mytransformer.setDestinationsize(width,height);
 							mytransformer.run();
-							// update roiposition accordingly 
+							// update roiposition accordingly
 							listRoisource =GuiCLEMButtons.this.matiteclasse.source.getValue().getROIs(sorted);
 							updatemyRoi2Dposition(listRoisource,CombinedTransfo);
 						}
@@ -372,15 +375,15 @@ public class GuiCLEMButtons extends JPanel {
 						{
 							//mytransformer.setDestinationsize(oriwidth,oriheight);
 							//also set back pixel size
-							
+
 							GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeX(GuiCLEMButtons.this.matiteclasse.bucalibx);//TO DO rather by scale
 							GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeY(GuiCLEMButtons.this.matiteclasse.bucaliby);
 							GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeZ(GuiCLEMButtons.this.matiteclasse.bucalibz);
 						}
-						
-						
+
+
 					}
-					
+
 					//for 3D
 					else{
 						SimilarityTransformation3D transfo = GuiCLEMButtons.this.matiteclasse.getCombinedTransfo3D(document);
@@ -395,10 +398,10 @@ public class GuiCLEMButtons extends JPanel {
 						transfoimage3D.setImageSource(GuiCLEMButtons.this.matiteclasse.source.getValue(),transfo.getorisizex(),transfo.getorisizey(), transfo.getorisizez());
 						transfoimage3D.setDestinationsize(width, height, nbz,
 								targetsx, targetsy, targetsz);
-						transfoimage3D.setParameters(transfomat,transfo.getscalex(),transfo.getscalez());
+						transfoimage3D.setParameters(transfomat);
 						transfoimage3D.run();
 						// and also update ROIs
-						
+
 						GuiCLEMButtons.this.matiteclasse.updateSourcePoints3D(transfo);
 						GuiCLEMButtons.this.matiteclasse.updateRoi();
 						}
@@ -414,14 +417,14 @@ public class GuiCLEMButtons extends JPanel {
 					else{
 						new AnnounceFrame("Nothing to undo",5);
 					}
-				
+
 			}
-				
+
 			}
 		});
-			
-					
-			
+
+
+
 		/**
 		 * Button show points on ori source
 		 */
@@ -440,7 +443,7 @@ public class GuiCLEMButtons extends JPanel {
 					//In 2D
 					if (((GuiCLEMButtons.this.matiteclasse.mode3D==false)&&listRoisource.size()>2)||((GuiCLEMButtons.this.matiteclasse.mode3D==true)&&listRoisource.size()>3))
 					{
-				
+
 					//read xml doc containing transformations
 					Document document = XMLUtil.loadDocument(GuiCLEMButtons.this.matiteclasse.XMLFile);
 					// for 3D when we will apply reverse transfo
@@ -455,9 +458,9 @@ public class GuiCLEMButtons extends JPanel {
 								.showDialog("argh.");
 						return;
 					}
-					
+
 					try {
-						
+
 						for (int t = 0; t < GuiCLEMButtons.this.matiteclasse.backupsource.getSizeT(); t++) {
 							for (int z = 0; z < GuiCLEMButtons.this.matiteclasse.backupsource.getSizeZ(); z++) {
 
@@ -474,12 +477,12 @@ public class GuiCLEMButtons extends JPanel {
 
 						// sequence.
 					}
-					
+
 					//for 2D
 					if (GuiCLEMButtons.this.matiteclasse.mode3D==false){
 					Matrix correctedtransfo=GuiCLEMButtons.this.matiteclasse.getCombinedTransfo(document);
 					Matrix backto_ori=correctedtransfo.inverse();
-					
+
 					updatemyRoi2Dposition(listRoisource,backto_ori);
 					GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeX(GuiCLEMButtons.this.matiteclasse.bucalibx);//TO DO rather by scale
 					GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeY(GuiCLEMButtons.this.matiteclasse.bucaliby);
@@ -488,7 +491,7 @@ public class GuiCLEMButtons extends JPanel {
 					else{
 					//for 3D
 					//update roi positions (in Original sequence size!)
-						
+
 						Matrix correctedtransfo=GuiCLEMButtons.this.matiteclasse.getCombinedTransfo3D(document).getMatrix();
 						Matrix backto_ori=correctedtransfo.inverse();
 						// In that case the orisize is actually the pixel size where it comes from, i.e before that it was reversed to backupsource
@@ -498,11 +501,11 @@ public class GuiCLEMButtons extends JPanel {
 						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeY(GuiCLEMButtons.this.matiteclasse.bucaliby);
 						GuiCLEMButtons.this.matiteclasse.source.getValue().setPixelSizeZ(GuiCLEMButtons.this.matiteclasse.bucalibz);
 						GuiCLEMButtons.this.matiteclasse.updateSourcePoints3D(reversetransfo); // use source calibration, that's why we make sure that we use the correct one here
-						
+
 						GuiCLEMButtons.this.matiteclasse.updateRoi();
-						
+
 					}
-					
+
 				// Reinitialize XML FILE
 					//AND CREATE A COPY of the former one for back up with the date
 					File dest=new File(GuiCLEMButtons.this.matiteclasse.XMLFile.getPath()+"_"+java.time.LocalDateTime.now().getDayOfMonth()+"_"+java.time.LocalDateTime.now().getMonth()+"_"+java.time.LocalDateTime.now().getHour()+java.time.LocalDateTime.now().getMinute()+"_back-up.xml");
@@ -530,11 +533,11 @@ public class GuiCLEMButtons extends JPanel {
 						XMLUtil.setAttributeDoubleValue(transfoElement, "sz" , GuiCLEMButtons.this.matiteclasse.target.getValue()
 								.getPixelSizeZ() );
 					}
-					
-					
+
+
 					XMLUtil.saveDocument(myXMLdoc, GuiCLEMButtons.this.matiteclasse.XMLFile);
 					System.out.println("Saved as"+GuiCLEMButtons.this.matiteclasse.XMLFile.getPath());
-					
+
 					saveRois(GuiCLEMButtons.this.matiteclasse.source.getValue());
 					saveRois(GuiCLEMButtons.this.matiteclasse.target.getValue());
 			}
@@ -542,7 +545,7 @@ public class GuiCLEMButtons extends JPanel {
 			}
 
 			private void saveRois(Sequence value) {
-				
+
 				final List<ROI> rois = value.getROIs();
 
                 if (rois.size() > 0)
@@ -554,18 +557,18 @@ public class GuiCLEMButtons extends JPanel {
                         ROI.saveROIsToXML(XMLUtil.getRootElement(doc), rois);
                         System.out.println("ROIS saved before in "+ value.getFilename()+"_ROIsavedwhenshowonoriginaldata.xml"+"\n Use Load Roi(s) if needed in ROI top menu" );
                         XMLUtil.saveDocument(doc, value.getFilename()+"_ROIsavedwhenshowonoriginaldata.xml");
-                        
+
                     }
 }
 			}
 			});
-		
-		
+
+
 		add(btnNewButton);
 		add(btnNewButton2);
 		add(btnButtonUndo);
 		add(btnButtonshowPoints);
-		
+
 	}
 	protected void updatemyRoi2Dposition(List<ROI> listRoisource, Matrix matrixtobeapplied) {
 		// TODO Auto-generated method stub
@@ -580,7 +583,7 @@ public class GuiCLEMButtons extends JPanel {
 			pnt.setY(newY);
 	        roi.setPosition5D(pnt);
 		}
-		GuiCLEMButtons.this.matiteclasse.GetSourcePointsfromROI(); 
+		GuiCLEMButtons.this.matiteclasse.GetSourcePointsfromROI();
 	}
-		
+
 }

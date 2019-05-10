@@ -70,6 +70,13 @@ import icy.system.thread.ThreadUtil;
 import icy.type.DataType;
 import icy.type.point.Point5D;
 import icy.util.XMLUtil;
+import plugins.perrine.easyclemv0.image_transformer.ImageTransformer;
+import plugins.perrine.easyclemv0.image_transformer.ImageTransformerInterface;
+import plugins.perrine.easyclemv0.image_transformer.Stack3DVTKTransformer;
+import plugins.perrine.easyclemv0.model.Dataset;
+import plugins.perrine.easyclemv0.model.Similarity;
+import plugins.perrine.easyclemv0.registration.NDimensionnalSimilarityRegistration;
+import plugins.perrine.easyclemv0.storage.XmlFileStorage;
 
 public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener {
 	private ActionListener actionbutton = new ActionListener() {
@@ -457,95 +464,63 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		this.listofNvalues = new ArrayList<Double>();
 
 		transformer = new Runnable() {
-
 			@Override
 			public void run() {
-
-				if (stopFlag == false) {
-
-					GetSourcePointsfromROI();
-					GetTargetPointsfromROI();
-					if (sourcepoints.length == targetpoints.length) {
-						if (mode3D == false) {
-							fiducialsvector = createVectorfromdoublearray(sourcepoints, targetpoints);
-							fiducialsvector3D = new Vector<PointsPair3D>();
-						} else {
-							fiducialsvector3D = createVectorfromdoublearray3D(sourcepoints, targetpoints);
-							fiducialsvector = new Vector<PointsPair>();
-						}
-
-					} else
-					// to do separate case where source points more than target
-					// point= adding wrongly a point on target point
-					{
-
-						// removing roi not called Point number
-						boolean removed = false;
-						ArrayList<ROI> listroi = source.getValue().getROIs();
-						for (ROI roi : listroi) {
-							if (roi.getName().contains("Point2D")) {
-								source.getValue().removeROI(roi);
-								removed = true;
-							}
-							if (roi.getName().contains("Point3D")) {
-								source.getValue().removeROI(roi);
-								removed = true;
-							}
-						}
-						listroi = target.getValue().getROIs();
-						for (ROI roi : listroi) {
-							if (roi.getName().contains("Point2D")) {
-								target.getValue().removeROI(roi);
-								removed = true;
-							}
-							if (roi.getName().contains("Point3D")) {
-								target.getValue().removeROI(roi);
-								removed = true;
-							}
-						}
-
-						GetSourcePointsfromROI();
-						GetTargetPointsfromROI();
-						if (removed)
-							new AnnounceFrame(
-									"All points named Point2D or Point3D and likely not added by you have been removed. Re click now on \"apply transform\"");
-						if (sourcepoints.length != targetpoints.length) {
-							MessageDialog.showDialog("Number of points", 
-									"The number of points of ROI in source and target image are different. \n Check your ROI points and update transfo ");
-							
-
-						}
-						Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
-						return;
-
-					}
-					// Perrine: Why did I do that?
-					int z = source.getValue().getFirstViewer().getPositionZ();
-					ROI roi = source.getValue().getROIs().get(source.getValue().getROIs().size() - 1);// was
-																										// get
-																										// selected
-																										// roi
-
-					if (roi != null) {
-						Point5D pos = roi.getPosition5D();
-						// set z et recuperer
-						pos.setZ(z);
-						roi.setPosition5D(pos);
-						// roi.setColor(Color.green);
-						if (pause == false) {
-							ComputeTransfo();
-						} else {
-							new AnnounceFrame("You are in pause mode, click on update transfo", 3);
-							Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
-						}
-
-					}
+				if (stopFlag) {
+					return;
 				}
 
+				double[][] sourcePointsFromRoi = getPointsFromRoi(source.getValue());
+				double[][] targetPointsFromRoi = getPointsFromRoi(target.getValue());
+
+				if (sourcePointsFromRoi.length != targetPointsFromRoi.length) {
+					boolean removed = checkRoiNames(source) || checkRoiNames(target);
+					sourcePointsFromRoi = getPointsFromRoi(source.getValue());
+					targetPointsFromRoi = getPointsFromRoi(target.getValue());
+					if (removed) {
+						new AnnounceFrame("All points named Point2D or Point3D and likely not added by you have been removed. Re click now on \"apply transform\"");
+					}
+					if (sourcePointsFromRoi.length != targetPointsFromRoi.length) {
+						MessageDialog.showDialog("Number of points", "The number of points of ROI in source and target image are different. \n Check your ROI points and update transfo ");
+					}
+					Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
+					return;
+				}
+
+				Dataset sourceDataset = new Dataset(sourcePointsFromRoi);
+				Dataset targetDataset = new Dataset(targetPointsFromRoi);
+
+				int z = source.getValue().getFirstViewer().getPositionZ();
+				ROI roi = source.getValue().getROIs().get(source.getValue().getROIs().size() - 1);
+				if (roi != null) {
+					Point5D pos = roi.getPosition5D();
+					pos.setZ(z);
+					roi.setPosition5D(pos);
+					if (!pause) {
+						ComputeTransfo(sourceDataset, targetDataset);
+					} else {
+						new AnnounceFrame("You are in pause mode, click on update transfo", 3);
+						Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
+					}
+				}
 			}
-
 		};
+	}
 
+	private boolean checkRoiNames(EzVarSequence sequence) {
+		boolean removed = false;
+		ArrayList<ROI> listroi = sequence.getValue().getROIs();
+		for (ROI roi : listroi) {
+			if (roi.getName().contains("Point2D")) {
+				sequence.getValue().removeROI(roi);
+				removed = true;
+			}
+			if (roi.getName().contains("Point3D")) {
+				sequence.getValue().removeROI(roi);
+				removed = true;
+			}
+		}
+		return removed;
 	}
 
 	/**
@@ -557,23 +532,24 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * @return fidulciallist
 	 */
 	Vector<PointsPair3D> createVectorfromdoublearray3D(double[][] sourcepoints2, double[][] targetpoints2) {
-		Vector<PointsPair3D> points = new Vector<PointsPair3D>();
+		Vector<PointsPair3D> points = new Vector<>();
 		if (sourcepoints2.length == targetpoints2.length) {
 			for (int i = 0; i < sourcepoints2.length; i++) {
 				points.addElement(
-						new PointsPair3D(new PPPoint3D(sourcepoints2[i][0], sourcepoints2[i][1], sourcepoints2[i][2]),
-								new PPPoint3D(targetpoints2[i][0], targetpoints2[i][1], targetpoints2[i][2])));
-				/*
-				 * System.out.print("Point " + i + 1 + " source " +
-				 * sourcepoints2[i][0] + " " + sourcepoints2[i][1] + " target "
-				 * + targetpoints2[i][0] + " " + targetpoints2[i][1] + "\n");
-				 */
+					new PointsPair3D(
+						new PPPoint3D(
+							sourcepoints2[i][0],
+							sourcepoints2[i][1],
+							sourcepoints2[i][2]
+						),
+						new PPPoint3D(
+							targetpoints2[i][0],
+							targetpoints2[i][1],
+							targetpoints2[i][2])
+					)
+				);
 			}
-		} /*
-			 * else{ new AnnounceFrame(
-			 * "Warning: not the same number of point on both image. Nothing done"
-			 * ,5); }
-			 */
+		}
 		return points;
 	}
 
@@ -586,24 +562,24 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * @return
 	 */
 	Vector<PointsPair> createVectorfromdoublearray(double[][] sourcepoints2, double[][] targetpoints2) {
-
-		Vector<PointsPair> points = new Vector<PointsPair>();
+		Vector<PointsPair> points = new Vector<>();
 		if (targetpoints2.length == sourcepoints2.length) {
 			for (int i = 0; i < sourcepoints2.length; i++) {
-				points.addElement(new PointsPair(new Point2D.Double(sourcepoints2[i][0], sourcepoints2[i][1]),
-						new Point2D.Double(targetpoints2[i][0], targetpoints2[i][1])));
-				/*
-				 * System.out.print("Point " + i + 1 + " source " +
-				 * sourcepoints2[i][0] + " " + sourcepoints2[i][1] + " target "
-				 * + targetpoints2[i][0] + " " + targetpoints2[i][1] + "\n");
-				 */
+				points.addElement(
+					new PointsPair(
+						new Point2D.Double(
+							sourcepoints2[i][0],
+							sourcepoints2[i][1]
+						),
+						new Point2D.Double(
+							targetpoints2[i][0],
+							targetpoints2[i][1]
+						)
+					)
+				);
 			}
-		} // else{
-			// new AnnounceFrame("Warning: not the same number of point on both
-			// image. Nothing done",5);
-			// }
+		}
 		return points;
-
 	}
 
 	/**
@@ -613,19 +589,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * @param listfiducials
 	 */
 	private void ReOrder(ArrayList<ROI> listfiducials) {
-
 		int longueur = listfiducials.size();
-
 		ROI tampon;
 		boolean permut;
-
 		do {
-
 			permut = false;
 			for (int i = 0; i < longueur - 1; i++) {
-
 				if (listfiducials.get(i).getName().compareTo(listfiducials.get(i + 1).getName()) > 0) {
-
 					tampon = listfiducials.get(i);
 					listfiducials.set(i, listfiducials.get(i + 1));
 					listfiducials.set(i + 1, tampon);
@@ -633,7 +603,43 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				}
 			}
 		} while (permut);
+	}
 
+	double[][] getPointsFromRoi(Sequence sequence) {
+		if (sequence == null) {
+			MessageDialog.showDialog("Make sure target image is openned");
+			return null;
+		}
+		sequence.removeListener(this);
+		ArrayList<ROI> listfiducials = sequence.getROIs();
+		for (int i = 0; i < listfiducials.size(); i++) {
+			ROI roi = listfiducials.get(i);
+			if (!roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint")) {
+				ROI3DPoint roi3D = new ROI3DPoint(roi.getPosition5D());
+				roi3D.setName(roi.getName());
+				roi3D.setColor(roi.getColor());
+				roi3D.setStroke(roi.getStroke());
+				listfiducials.set(i, roi3D);
+			}
+		}
+		sequence.removeAllROI();
+		sequence.addROIs(listfiducials, false);
+		ReOrder(listfiducials);
+		double [][] result = new double[listfiducials.size()][3];
+		int i = -1;
+		for (ROI roi : listfiducials) {
+			i++;
+			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			if (roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint"))
+				p3D = roi.getPosition5D();
+			if (Double.isNaN(p3D.getX()))
+				p3D = roi.getPosition5D();
+			result[i][0] = p3D.getX();
+			result[i][1] = p3D.getY();
+			result[i][2] = p3D.getZ();
+		}
+		sequence.addListener(this);
+		return result;
 	}
 
 	/**
@@ -648,42 +654,29 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		ArrayList<ROI> listfiducials = target.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
 			ROI roi = listfiducials.get(i);
-			if (roi.getClassName() != "plugins.kernel.roi.roi3d.ROI3DPoint") {
+			if (!roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint")) {
 				ROI3DPoint roi3D = new ROI3DPoint(roi.getPosition5D());
 				roi3D.setName(roi.getName());
 				roi3D.setColor(roi.getColor());
 				roi3D.setStroke(roi.getStroke());
-				listfiducials.set(i, roi3D);// then we convert the Roi
+				listfiducials.set(i, roi3D);
 			}
 		}
-
 		target.getValue().removeAllROI();
-
 		target.getValue().addROIs(listfiducials, false);
-		
 		ReOrder(listfiducials);
-		// target.getValue().removeAllROI();
-		// target.getValue().addROIs(listfiducials, true);
 		this.targetpoints = new double[listfiducials.size()][3];
-
 		int i = -1;
 		for (ROI roi : listfiducials) {
 			i++;
 			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
+			if (roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint"))
 				p3D = roi.getPosition5D();
 			if (Double.isNaN(p3D.getX()))
-				p3D = roi.getPosition5D(); // some Roi does not have gravity
-											// center such as points
+				p3D = roi.getPosition5D();
 			this.targetpoints[i][0] = p3D.getX();
 			this.targetpoints[i][1] = p3D.getY();
 			this.targetpoints[i][2] = p3D.getZ();
-			// if (target.getValue().getSizeZ()==1){
-			// this.targetpoints[i][2] =1.0;
-			// }
-			// else{
-			this.targetpoints[i][2] = p3D.getZ();
-			// }
 		}
 		target.getValue().addListener(this);
 	}
@@ -697,47 +690,34 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 			return;
 		}
 		source.getValue().removeListener(this);
-		
 		ArrayList<ROI> listfiducials = source.getValue().getROIs();
 		for (int i = 0; i < listfiducials.size(); i++) {
 			ROI roi = listfiducials.get(i);
-			if (roi.getClassName() != "plugins.kernel.roi.roi3d.ROI3DPoint") {
+			if (!roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint")) {
 				ROI3DPoint roi3D = new ROI3DPoint(roi.getPosition5D());
 				roi3D.setName(roi.getName());
 				roi3D.setColor(roi.getColor());
 				roi3D.setStroke(roi.getStroke());
-				listfiducials.set(i, roi3D);// then we convert the Roi
-				
+				listfiducials.set(i, roi3D);
 			}
 		}
-
 		source.getValue().removeAllROI();
 		source.getValue().addROIs(listfiducials, false);
-		// ORDER ROI by name
-		ReOrder(listfiducials); // should be myRoi3d now
-
-		// source.getValue().getROIs().replaceAll(arg0);
+		ReOrder(listfiducials);
 		this.sourcepoints = new double[listfiducials.size()][3];
-		// fiducials=new double[10][3];
 		int i = -1;
-
 		for (ROI roi : listfiducials) {
 			i++;
 			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
-			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
+			if (roi.getClassName().equals("plugins.kernel.roi.roi3d.ROI3DPoint"))
 				p3D = roi.getPosition5D();
-
 			if (Double.isNaN(p3D.getX()))
-				p3D = roi.getPosition5D(); // some Roi does not have gravity
-											// center such as points
+				p3D = roi.getPosition5D();
 			this.sourcepoints[i][0] = p3D.getX();
 			this.sourcepoints[i][1] = p3D.getY();
-
-			this.sourcepoints[i][2] = p3D.getZ();// should be double here now
-
+			this.sourcepoints[i][2] = p3D.getZ();
 		}
 		// source.getValue().addListener(this);
-
 	}
 
 	/**
@@ -745,7 +725,6 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * interactive mode of placing the points TODO: add the installation of the
 	 * EDF easy plugin when needed
 	 * 
-	 * @param nonrigid
 	 */
 	@Override
 	protected void execute() {
@@ -968,11 +947,8 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * Write each transform to an xml file. TODO: add the 3D transform (checking
 	 * vtk maybe)
 	 */
-	void ComputeTransfo() {
-		// fiducialsvector(mode2D) OR fiducialsvector3D (mode3D)
-		// could have been thinking differently
-
-		if ((fiducialsvector.size() > 2) || (fiducialsvector3D.size() > 3)) {
+	void ComputeTransfo(Dataset sourceDataset, Dataset targetDataset) {
+		if (sourceDataset.getN() > sourceDataset.getDimension()) {
 			double back_up_pixelsizex = source.getValue().getPixelSizeX();
 			double back_up_pixelsizey = source.getValue().getPixelSizeY();
 			double back_up_pixelsizez = source.getValue().getPixelSizeZ();
@@ -984,135 +960,61 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				return;
 			}
 			try {
-				// final ArrayList<IcyBufferedImage> images =
-				// sequence.getAllImage();
-
 				for (int t = 0; t < backupsource.getSizeT(); t++) {
 					for (int z = 0; z < backupsource.getSizeZ(); z++) {
-
 						source.getValue().setImage(t, z, backupsource.getImage(t, z));
-
 					}
 				}
 			}
-			//
-
 			finally {
-
 				source.getValue().endUpdate();
-
-				// sequence.
 			}
-			//source.getValue().setAutoUpdateChannelBounds(true);
-			
-			// we apply the previous combined transfo to the orginal image
-			// before applying the new transfo in order to avoid bad cropping of
-			// the pixels intensity values
-			Document document = XMLUtil.loadDocument(XMLFile);
+
+			XmlFileStorage xmlFileStorage = new XmlFileStorage(XMLFile);
+			System.out.println(XMLFile.getPath());
+			NDimensionnalSimilarityRegistration nDimensionnalSimilarityRegistration = new NDimensionnalSimilarityRegistration();
+
+			ImageTransformerInterface imageTransformer;
+			if(!mode3D) {
+				imageTransformer = new ImageTransformer();
+			} else {
+				imageTransformer = new Stack3DVTKTransformer();
+			}
+
 			SimilarityTransformation2D lasttransfo = null;
-			if (mode3D == false) {
-				Matrix combinedtransfobefore = getCombinedTransfo(document);
-				SimilarityRegistrationAnalytic meanfiducialsalgo = new SimilarityRegistrationAnalytic();
-				SimilarityTransformation2D newtransfo = meanfiducialsalgo.apply(fiducialsvector);
-				lasttransfo = newtransfo;
-				//double Sangle = newtransfo.getS();
-				//double Cangle = newtransfo.getC();
-				double dx = newtransfo.getdx();
-				double dy = newtransfo.getdy();
-				double scale = newtransfo.getscale();
-				// write xml file
-				Matrix transfo = newtransfo.getMatrix();
-				writeTransfo(transfo, fiducialsvector.size());
 
-				// combined the matrix and the new one in order to apply it
-				// directly to the new image
-				transfo = transfo.times(combinedtransfobefore);
-
-				ImageTransformer mytransformer = new ImageTransformer();
-
-				mytransformer.setImageSource(source.getValue());
-				// mytransformer.setParameters(dx, dy, Sangle, Cangle, scale);
-				mytransformer.setParameters(transfo);
-				mytransformer.setDestinationsize(target.getValue().getWidth(), target.getValue().getHeight());
-				mytransformer.run();
-				
-				
-				// set the calibration to target calibration
-				double pixelsizexum = target.getValue().getPixelSizeX();
-				double pixelsizeyum = target.getValue().getPixelSizeY();
-				source.getValue().setPixelSizeX(pixelsizexum);// TO DO rather by
-																// scale
-				source.getValue().setPixelSizeY(pixelsizeyum);
-				double angleyz = Math.atan2(transfo.get(2, 1), transfo.get(2, 2));
-				double anglexz = Math.atan2(-transfo.get(2, 0),
-						Math.sqrt(transfo.get(2, 1) * transfo.get(2, 1) + transfo.get(2, 2) * transfo.get(2, 2)));
-				double anglexy = Math.atan2(transfo.get(1, 0), transfo.get(0, 0));
-				angleyz = Math.round(Math.toDegrees(angleyz) * 1000.0) / 1000.0;
-				anglexz = Math.round(Math.toDegrees(anglexz) * 1000.0) / 1000.0;
-				anglexy = Math.round(Math.toDegrees(anglexy) * 1000.0) / 1000.0;
-				double dxt = Math.round(transfo.get(3, 0) * 1000.0) / 1000.0;
-				double dyt = Math.round(transfo.get(3, 1) * 1000.0) / 1000.0;
-				dx = Math.round(dx * 1000.0) / 1000.0;
-				dy = Math.round(dy * 1000.0) / 1000.0;
-				scale = Math.round(scale * 1000.0) / 1000.0;
-
-				System.out.println("Total computed Translation x " + dxt + " Total Translation y " + dyt
-						+ " angle Oz (in degrees) " + anglexy + " Scale " + scale);
-
-				updateSourcePoints2D(newtransfo);
-				updateRoi();
-				new AnnounceFrame("Transformation Updated", 5);
-			} else // mode3D
-			{
-				if (!(testcoplanarity(fiducialsvector3D) && fiducialsvector3D.size() < 6)) {
-					SimilarityTransformation3D combinedtransfobefore = getCombinedTransfo3D(document);
-					SimilarityRegistrationAnalytic3D meanfiducialsalgo = new SimilarityRegistrationAnalytic3D();
-
-					SimilarityTransformation3D newtransfo = meanfiducialsalgo.apply(fiducialsvector3D,
-							back_up_pixelsizex, back_up_pixelsizey, back_up_pixelsizez,
-							target.getValue().getPixelSizeX(), target.getValue().getPixelSizeY(),
-							target.getValue().getPixelSizeZ());
-
-					// write xml file
-					Matrix transfo = newtransfo.getMatrix();
-					if (transfo.get(2, 2) != 0) {
-						writeTransfo3D(newtransfo, fiducialsvector3D.size());
-						transfo = transfo.times(combinedtransfobefore.getMatrix());
-
-						Stack3DVTKTransformer transfoimage3D = new Stack3DVTKTransformer();
-						transfoimage3D.setImageSource(source.getValue(), combinedtransfobefore.getorisizex(),
-								combinedtransfobefore.getorisizey(), combinedtransfobefore.getorisizez());
-						transfoimage3D.setDestinationsize(target.getValue().getSizeX(), target.getValue().getSizeY(),
-								target.getValue().getSizeZ(), target.getValue().getPixelSizeX(),
-								target.getValue().getPixelSizeY(), target.getValue().getPixelSizeZ());
-						transfoimage3D.setParameters(transfo, newtransfo.getscalex(), newtransfo.getscalez());
-						transfoimage3D.run();
-						updateSourcePoints3D(newtransfo);
-						updateRoi();
-						double angleyz = Math.atan2(transfo.get(2, 1), transfo.get(2, 2));
-						double anglexz = Math.atan2(-transfo.get(2, 0), Math
-								.sqrt(transfo.get(2, 1) * transfo.get(2, 1) + transfo.get(2, 2) * transfo.get(2, 2)));
-						double anglexy = Math.atan2(transfo.get(1, 0), transfo.get(0, 0));
-						angleyz = Math.round(Math.toDegrees(angleyz) * 1000.0) / 1000.0;
-						anglexz = Math.round(Math.toDegrees(anglexz) * 1000.0) / 1000.0;
-						anglexy = Math.round(Math.toDegrees(anglexy) * 1000.0) / 1000.0;
-						double dxt = Math.round(transfo.get(0, 3) * 1000.0) / 1000.0;
-						double dyt = Math.round(transfo.get(1, 3) * 1000.0) / 1000.0;
-						double dzt = Math.round(transfo.get(2, 3) * 1000.0) / 1000.0;
-						double scalexy = Math.round(newtransfo.getscalex() * 1000.0) / 1000.0;
-						double scalez = Math.round(newtransfo.getscalez() * 1000.0) / 1000.0;
-						System.out.println("Total computed Translation x: " + dxt + "  y:" + dyt + "z: " + dzt
-								+ " angle Oz: " + anglexy + " angle Oy: " + anglexz + " angle Ox: " + angleyz
-								+ " Scale xy (in physical unit): " + scalexy + " Scale z:  " + scalez);
-						new AnnounceFrame("Transformation Updated", 5);
-					}
-				} else {
-					System.out.println("Instability: One more point");
-					new AnnounceFrame(
-							"The position of the points does not allow a correct 3D transform. \n You need at least 2 points in separate z (slice). \n You may want to consider a 2D transform (it will still transform the full stack).");
+			if (!sourceDataset.isCoplanar() && !targetDataset.isCoplanar() && sourceDataset.getN() > 3) {
+				Matrix combinedtransfobefore = xmlFileStorage.read();
+				Similarity similarity = nDimensionnalSimilarityRegistration.apply(sourceDataset, targetDataset);
+				xmlFileStorage.write(similarity.getMatrix(), sourceDataset.getN());
+				Matrix transfo = similarity.getMatrix();
+				if(combinedtransfobefore != null) {
+					transfo = combinedtransfobefore.times(similarity.getMatrix());
 				}
+				imageTransformer.setImageSource(source.getValue());
+				imageTransformer.setDestinationsize(target.getValue());
+				imageTransformer.setParameters(transfo);
+				imageTransformer.run();
+				Dataset sourceTransformedDataset = similarity.apply(sourceDataset);
+				updateRoi(sourceTransformedDataset);
 
+//				double pixelsizexum = target.getValue().getPixelSizeX();
+//				double pixelsizeyum = target.getValue().getPixelSizeY();
+//				source.getValue().setPixelSizeX(pixelsizexum);
+//				source.getValue().setPixelSizeY(pixelsizeyum);
+
+				new AnnounceFrame("Transformation Updated", 5);
+
+				if(!mode3D) {
+					printSummary2D(transfo, similarity.getScale());
+				} else {
+					printSummary3D(transfo, similarity.getScale());
+				}
+			} else {
+				System.out.println("Instability: One more point");
+				new AnnounceFrame("The position of the points does not allow a correct 3D transform. \n You need at least 2 points in separate z (slice). \n You may want to consider a 2D transform (it will still transform the full stack).");
 			}
+
 			if (monitor) {
 				TargetRegistrationErrorMap ComputeFRE = new TargetRegistrationErrorMap();
 				ComputeFRE.ReadFiducials(target.getValue());
@@ -1141,29 +1043,44 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				MonitorTargetPoint.UpdatePoint(TREValues);
 			}
 		} else {
-			System.out.println("One more point"); // We did transform at the
-													// beginning such that we
-													// have images at the same
-													// size to find the points
-													// more easily.
-			// target.getValue().addListener(this);
+			System.out.println("One more point");
 			if (mode3D) {
-				new AnnounceFrame("No transformation will be computed with less than 4 points. You have placed "
-						+ fiducialsvector3D.size() + " points", 2);
+				new AnnounceFrame("No transformation will be computed with less than 4 points. You have placed " + fiducialsvector3D.size() + " points", 2);
 			} else {
-				new AnnounceFrame("No transformation will be computed with less than 3 points. You have placed "
-						+ fiducialsvector.size() + " points", 2);
+				new AnnounceFrame("No transformation will be computed with less than 3 points. You have placed " + fiducialsvector.size() + " points", 2);
 			}
-
 		}
-		if (mode3D){
+		if (mode3D) {
 			Icy.getMainInterface().setSelectedTool(ROI3DPointPlugin.class.getName());
 		}
-		else{
+		else {
 			Icy.getMainInterface().setSelectedTool(ROI2DPointPlugin.class.getName());
 		}
-			// corrected for LUT adjustement
 		source.getValue().getFirstViewer().getLutViewer().setAutoBound(false);
+	}
+
+	private void printSummary2D(Matrix M, double scale) {
+		double anglexy = Math.atan2(M.get(1, 0), M.get(0, 0));
+		anglexy = Math.round(Math.toDegrees(anglexy) * 1000.0) / 1000.0;
+		double dxt = Math.round(M.get(3, 0) * 1000.0) / 1000.0;
+		double dyt = Math.round(M.get(3, 1) * 1000.0) / 1000.0;
+		scale = Math.round(scale * 1000.0) / 1000.0;
+		System.out.println("Total computed Translation x " + dxt + " Total Translation y " + dyt + " angle Oz (in degrees) " + anglexy + " Scale " + scale);
+	}
+
+	private void printSummary3D(Matrix M, double scale) {
+		double angleyz = Math.atan2(M.get(2, 1), M.get(2, 2));
+		double anglexz = Math.atan2(-M.get(2, 0), Math.sqrt(M.get(2, 1) * M.get(2, 1) + M.get(2, 2) * M.get(2, 2)));
+		double anglexy = Math.atan2(M.get(1, 0), M.get(0, 0));
+		angleyz = Math.round(Math.toDegrees(angleyz) * 1000.0) / 1000.0;
+		anglexz = Math.round(Math.toDegrees(anglexz) * 1000.0) / 1000.0;
+		anglexy = Math.round(Math.toDegrees(anglexy) * 1000.0) / 1000.0;
+		double dxt = Math.round(M.get(0, 3) * 1000.0) / 1000.0;
+		double dyt = Math.round(M.get(1, 3) * 1000.0) / 1000.0;
+		double dzt = Math.round(M.get(2, 3) * 1000.0) / 1000.0;
+		System.out.println("Total computed Translation x: " + dxt + "  y:" + dyt + "z: " + dzt
+				+ " angle Oz: " + anglexy + " angle Oy: " + anglexz + " angle Ox: " + angleyz
+				+ " Scale xy (in physical unit): " + scale + " Scale z:  " + scale);
 	}
 
 	/**
@@ -1175,18 +1092,14 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	private boolean testcoplanarity(Vector<PointsPair3D> fiducialsvector3d2) {
 		boolean testsource = true;
 		boolean testtarget = true;
-		// check if at least one point source has a z different from the other
-		// one,
-		// and do the same for target points
-		double zsource = fiducialsvector3d2.get(0).first.getZ();
 
+		double zsource = fiducialsvector3d2.get(0).first.getZ();
 		for (int i = 1; i < fiducialsvector3d2.size(); i++) {
 			PointsPair3D currentpair = fiducialsvector3d2.get(i);
 			if (currentpair.first.getZ() != zsource) {
 				testsource = false;
 				break;
 			}
-
 		}
 
 		double ztarget = fiducialsvector3d2.get(0).second.getZ();
@@ -1323,59 +1236,6 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 	}
 
-	void updateSourcePoints3D(SimilarityTransformation3D newtransfo) {
-		for (int i = 0; i < this.sourcepoints.length; i++) {
-			PPPoint3D testPoint = new PPPoint3D(this.sourcepoints[i][0], this.sourcepoints[i][1],
-					this.sourcepoints[i][2]);
-			newtransfo.apply(testPoint);// get the output IN PHYSICAL UNIT!
-			this.sourcepoints[i][0] = testPoint.getX() / source.getValue().getPixelSizeX();
-			this.sourcepoints[i][1] = testPoint.getY() / source.getValue().getPixelSizeY();
-			this.sourcepoints[i][2] = testPoint.getZ() / source.getValue().getPixelSizeZ();
-		}
-
-	}
-
-	// this method append R, T and scale to an opened xml file
-	// this one does not bear flipping.
-	/*
-	 * private void writeTransfo_Old(SimilarityTransformation2D newtransfo, int
-	 * order) {
-	 * 
-	 * Matrix R = newtransfo.getR(); Matrix T = newtransfo.getT(); double scale
-	 * = newtransfo.getscale();
-	 * 
-	 * Document document = XMLUtil.loadDocument(XMLFile); Element transfoElement
-	 * = XMLUtil.addElement( document.getDocumentElement(),
-	 * "MatrixTransformation");
-	 * 
-	 * XMLUtil.setAttributeIntValue(transfoElement, "order", order);
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m00", R.get(0, 0)
-	 * scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m01", R.get(0,
-	 * 1) scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m02",
-	 * R.get(0, 2) scale); XMLUtil.setAttributeDoubleValue(transfoElement,
-	 * "m03", T.get(0, 0));
-	 * 
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m10", R.get(1, 0)
-	 * scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m11", R.get(1,
-	 * 1) scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m12",
-	 * R.get(1, 2) scale); XMLUtil.setAttributeDoubleValue(transfoElement,
-	 * "m13", T.get(1, 0));
-	 * 
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m20", R.get(2, 0)
-	 * scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m21", R.get(2,
-	 * 1) scale); XMLUtil.setAttributeDoubleValue(transfoElement, "m22",
-	 * R.get(2, 2) scale); XMLUtil.setAttributeDoubleValue(transfoElement,
-	 * "m23", T.get(2, 0));
-	 * 
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m30", 0);
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m31", 0);
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m32", 0);
-	 * XMLUtil.setAttributeDoubleValue(transfoElement, "m33", 1);
-	 * XMLUtil.setAttributeValue(transfoElement, "process_date", new
-	 * Date().toString()); XMLUtil.saveDocument(document, XMLFile);
-	 * 
-	 * }
-	 */
 	/**
 	 * this method append R, T and scale to an opened xml file
 	 * 
@@ -1427,16 +1287,24 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * 
 	 * @param newtransfo
 	 */
-
 	private void updateSourcePoints2D(SimilarityTransformation2D newtransfo) {
-
 		for (int i = 0; i < this.sourcepoints.length; i++) {
 			Point2D testPoint = new Point2D.Double(this.sourcepoints[i][0], this.sourcepoints[i][1]);
 			newtransfo.apply(testPoint);
 			this.sourcepoints[i][0] = testPoint.getX();
 			this.sourcepoints[i][1] = testPoint.getY();
 		}
+	}
 
+	void updateSourcePoints3D(SimilarityTransformation3D newtransfo) {
+		for (int i = 0; i < this.sourcepoints.length; i++) {
+			PPPoint3D testPoint = new PPPoint3D(this.sourcepoints[i][0], this.sourcepoints[i][1],
+				this.sourcepoints[i][2]);
+			newtransfo.apply(testPoint);// get the output IN PHYSICAL UNIT!
+			this.sourcepoints[i][0] = testPoint.getX() / source.getValue().getPixelSizeX();
+			this.sourcepoints[i][1] = testPoint.getY() / source.getValue().getPixelSizeY();
+			this.sourcepoints[i][2] = testPoint.getZ() / source.getValue().getPixelSizeZ();
+		}
 	}
 
 	/**
@@ -1444,26 +1312,33 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 	 * list of pair fiducials
 	 */
 	void updateRoi() {
-
 		ArrayList<ROI> listfiducials = source.getValue().getROIs();
-
 		ReOrder(listfiducials);
-		// fiducials=new double[10][3];
 		int i = -1;
-		//System.out.println("True Z position (zd in roi xml):");
 		for (ROI roi : listfiducials) {
-			// roi=(myRoi3D)roi;
 			i++;
 			Point5D position = roi.getPosition5D();
 			position.setX(this.sourcepoints[i][0]);
 			position.setY(this.sourcepoints[i][1]);
 			position.setZ(this.sourcepoints[i][2]);
-			roi.setPosition5D(position); // should now copy zd as well
-			System.out.println(roi.getName() + " " + this.sourcepoints[i][0] + " " + this.sourcepoints[i][1] + " "
-					+ this.sourcepoints[i][2]);
-
+			roi.setPosition5D(position);
+			System.out.println(roi.getName() + " " + this.sourcepoints[i][0] + " " + this.sourcepoints[i][1] + " " + this.sourcepoints[i][2]);
 		}
+	}
 
+	void updateRoi(Dataset dataset) {
+		ArrayList<ROI> listfiducials = source.getValue().getROIs();
+		ReOrder(listfiducials);
+		int i = -1;
+		for (ROI roi : listfiducials) {
+			i++;
+			Point5D position = roi.getPosition5D();
+			position.setX(dataset.getMatrix().get(i, 0));
+			position.setY(dataset.getMatrix().get(i, 1));
+			position.setZ(dataset.getMatrix().get(i, 2));
+			roi.setPosition5D(position);
+			System.out.println(roi.getName() + " " + dataset.getMatrix().get(i, 0) + " " + dataset.getMatrix().get(i, 1) + " " + dataset.getMatrix().get(i, 2));
+		}
 	}
 
 	/**

@@ -12,10 +12,9 @@
  **/
 
 
-package plugins.perrine.easyclemv0;
+package plugins.perrine.easyclemv0.image_transformer;
 
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -28,7 +27,6 @@ import icy.math.Scaler;
 import icy.sequence.Sequence;
 import icy.sequence.SequenceUtil;
 import icy.type.DataType;
-import icy.type.collection.array.Array1DUtil;
 
 /**
  * 
@@ -55,12 +53,10 @@ import icy.type.collection.array.Array1DUtil;
  *         Unsigned short OK
  * 
  */
-public class ImageTransformer implements Runnable {
+public class ImageTransformer implements Runnable, ImageTransformerInterface {
 
-	AffineTransform transform;
-	BufferedImage image;
-	double[] matrix;
-
+	private AffineTransform transform;
+	private BufferedImage image;
 	private Sequence sequence;
 	private BufferedImage imageDest;
 	private DataType oriType;
@@ -69,7 +65,6 @@ public class ImageTransformer implements Runnable {
 	 * Constructor: would crate an identity transform by default
 	 */
 	public ImageTransformer() {
-
 		transform = new AffineTransform();
 	}
 
@@ -79,9 +74,7 @@ public class ImageTransformer implements Runnable {
 	 *            ICY sequence on which it will be applied
 	 */
 	public void setImageSource(Sequence value) {
-
 		sequence = value;
-
 		oriType = value.getDataType_();
 	}
 
@@ -89,16 +82,20 @@ public class ImageTransformer implements Runnable {
 	 * One way to set the parameters used by @see ApplyTransformation. If input
 	 * was not a 4x4 matrix, then back to idendity matrix.
 	 * 
-	 * @param Transfo
+	 * @param transfo
 	 *            a Jama Matrix 4x4 , (for 3D version VT6K was used)
 	 */
-	public void setParameters(Matrix Transfo) {
-
-		if (Transfo.getRowDimension() == 4)
-			transform = new AffineTransform(Transfo.get(0, 0),
-					Transfo.get(1, 0), Transfo.get(0, 1), Transfo.get(1, 1),
-					Transfo.get(0, 3), Transfo.get(1, 3));
-
+	public void setParameters(Matrix transfo) {
+		if (transfo.getRowDimension() == 4) {
+			transform = new AffineTransform(
+				transfo.get(0, 0),
+				transfo.get(1, 0),
+				transfo.get(0, 1),
+				transfo.get(1, 1),
+				transfo.get(0, 3),
+				transfo.get(1, 3)
+			);
+		}
 	}
 
 	/**
@@ -115,11 +112,8 @@ public class ImageTransformer implements Runnable {
 	 * @param scale
 	 *            scaling factor
 	 */
-	public void setParameters(double dx, double dy, double S, double C,
-			double scale) {
-
-		transform = new AffineTransform(scale * C, scale * S, -scale * S, C
-				* scale, dx, dy);
+	public void setParameters(double dx, double dy, double S, double C, double scale) {
+		transform = new AffineTransform(scale * C, scale * S, -scale * S, C * scale, dx, dy);
 	}
 
 	/**
@@ -129,9 +123,11 @@ public class ImageTransformer implements Runnable {
 	 * @param height
 	 */
 	public void setDestinationsize(int width, int height) {
-		imageDest = new BufferedImage(width, height,
-				BufferedImage.TYPE_INT_ARGB);
+		imageDest = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+	}
 
+	public void setDestinationsize(Sequence target) {
+		imageDest = new BufferedImage(target.getWidth(), target.getHeight(), BufferedImage.TYPE_INT_ARGB);
 	}
 
 	/**
@@ -142,7 +138,6 @@ public class ImageTransformer implements Runnable {
 	public void run() {
 		System.out.println("I will apply transfo now");
 		// add the multi channel case
-		//
 		int nbt = sequence.getSizeT();
 		int nbz = sequence.getSizeZ();
 		Sequence newseq = SequenceUtil.getCopy(sequence);
@@ -153,28 +148,18 @@ public class ImageTransformer implements Runnable {
 		try {
 			// final ArrayList<IcyBufferedImage> images =
 			// sequence.getAllImage();
-			
 			for (int t = 0; t < nbt; t++) {
 				for (int z = 0; z < nbz; z++) {
-					
-					
-					
 					IcyBufferedImage image = transformIcyImage(newseq, t, z);
-					
 					sequence.setImage(t, z, image);
 					progress.setPosition(1*(z+t*nbz));
 				}
 			}
-			//
 		} finally {
-
 			sequence.endUpdate();
-			
-			// sequence.
 		}
 		progress.close();
 		System.out.println("have been aplied");
-
 	}
 
 	private IcyBufferedImage transformIcyImage(Sequence seq, int t, int z) {
@@ -190,8 +175,6 @@ public class ImageTransformer implements Runnable {
 			 */
 			if (imagetobemodified.getImage(c).getDataType_().getBitSize()==16)
 			{
-				
-						
 				/*final double[] darray = Array1DUtil.arrayToDoubleArray(imagetobemodified.getDataXY(c), imagetobemodified.isSignedDataType());
 				int[] red=new int[darray.length];
 				int[] green=new int[darray.length];
@@ -307,9 +290,5 @@ public class ImageTransformer implements Runnable {
 
 		//imagetobekept.dataChanged();
 		return imagetobekept;
-
 	}
-
-	
-
 }

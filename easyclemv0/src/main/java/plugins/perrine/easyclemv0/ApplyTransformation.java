@@ -37,6 +37,8 @@ import plugins.adufour.ezplug.EzVarSequence;
 
 import plugins.adufour.vars.lang.VarSequence;
 
+import plugins.perrine.easyclemv0.image_transformer.ImageTransformer;
+import plugins.perrine.easyclemv0.image_transformer.Stack3DVTKTransformer;
 import vtk.vtkDataArray;
 import vtk.vtkDataSet;
 import vtk.vtkDoubleArray;
@@ -230,7 +232,7 @@ public class ApplyTransformation extends EzPlug implements Block{
 			transfoimage3D.setImageSource(source.getValue(),transfo.getorisizex(),transfo.getorisizey(), transfo.getorisizez());
 			transfoimage3D.setDestinationsize(width, height, nbz,
 					targetsx, targetsy, targetsz,recenter);
-			transfoimage3D.setParameters(transfomat,transfo.getscalex(),transfo.getscalez());
+			transfoimage3D.setParameters(transfomat);
 			transfoimage3D.run();
 			progress.close();
 
