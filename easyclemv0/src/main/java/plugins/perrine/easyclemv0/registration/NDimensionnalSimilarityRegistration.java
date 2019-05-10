@@ -3,18 +3,19 @@ package plugins.perrine.easyclemv0.registration;
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import plugins.perrine.easyclemv0.model.Dataset;
+import plugins.perrine.easyclemv0.model.Point;
 import plugins.perrine.easyclemv0.model.Similarity;
 
 public class NDimensionnalSimilarityRegistration {
 
     public Similarity apply(Dataset source, Dataset target) {
-
+        Point sourceBarycentre = source.getBarycentre();
+        Point targetBarycentre = target.getBarycentre();
         source.substractBarycentre();
         target.substractBarycentre();
         double scale = Math.sqrt(target.getMeanNorm() / source.getMeanNorm());
-
         Matrix R = getR(source, target);
-        Matrix T = getT(R, source.getBarycentre().getmatrix(), target.getBarycentre().getmatrix(), scale);
+        Matrix T = getT(sourceBarycentre.getmatrix(), targetBarycentre.getmatrix(), R, scale);
         print("R", R);
         print("T", T);
         System.out.println("Scale is " + scale);
@@ -26,13 +27,13 @@ public class NDimensionnalSimilarityRegistration {
             return Matrix.identity(3, 3);
         }
 
-        Matrix M = target.getMatrix().transpose().times(source.getMatrix());
-        SingularValueDecomposition svd = M.svd();
-        return svd.getV().times(svd.getU().transpose());
+        Matrix S = source.getMatrix().transpose().times(target.getMatrix());
+        SingularValueDecomposition svd = S.svd();
+        return svd.getU().times(svd.getV().transpose());
     }
 
-    private Matrix getT(Matrix R, Matrix sourceBarycentre, Matrix targetBarycentre, double scale) {
-        return targetBarycentre.minus(R.times(sourceBarycentre).times(scale));
+    private Matrix getT(Matrix sourceBarycentre, Matrix targetBarycentre, Matrix R, double scale) {
+        return targetBarycentre.minus(R.times(scale).transpose().times(sourceBarycentre));
     }
 
     private void print(String name, Matrix M) {
