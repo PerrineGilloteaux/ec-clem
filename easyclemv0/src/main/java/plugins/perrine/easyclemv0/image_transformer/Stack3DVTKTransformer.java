@@ -16,10 +16,12 @@ package plugins.perrine.easyclemv0.image_transformer;
 
 import icy.gui.frame.progress.ProgressFrame;
 import icy.image.IcyBufferedImage;
+import icy.sequence.DimensionId;
 import icy.sequence.Sequence;
 //import icy.sequence.SequenceUtil;
 import icy.type.DataType;
 import Jama.Matrix;
+import plugins.perrine.easyclemv0.model.SequenceSize;
 import vtk.vtkDataArray;
 import vtk.vtkDataSet;
 import vtk.vtkDoubleArray;
@@ -43,7 +45,7 @@ import vtk.vtkUnsignedShortArray;
  * The difference with 2D transform is that the tranform is computed in REAL UNITS, because vtk apply it in real unit, 
  * which can be quite convenient for dealing with anisotropy!
  */
-public class Stack3DVTKTransformer implements Runnable, ImageTransformerInterface {
+public class Stack3DVTKTransformer implements Runnable, RigidImageTransformerInterface {
 
 	private vtkImageReslice ImageReslice;
 	private vtkMatrix4x4 transfo3D;
@@ -59,35 +61,63 @@ public class Stack3DVTKTransformer implements Runnable, ImageTransformerInterfac
 	private double InputSpacingz;
 	private double InputSpacingx;
 	private double InputSpacingy;
-	private int recenter=0;
+	private int recenter = 0;
 
-	public void setImageSource(Sequence value) {
-		this.sequence = value;
-		this.oriType = value.getDataType_();
-		this.InputSpacingx = this.sequence.getPixelSizeX();
-		this.InputSpacingy = this.sequence.getPixelSizeY();
-		this.InputSpacingz = this.sequence.getPixelSizeZ();
+	public void setSourceSequence(Sequence sequence) {
+		this.sequence = sequence;
+		setSourceSize(sequence.getPixelSizeX(), sequence.getPixelSizeY(), sequence.getPixelSizeZ());
+		setSourceType(sequence.getDataType_());
 	}
 
-	public void setImageSource(Sequence value, double orisizex, double orisizey, double orisizez) {
-		this.sequence = value;
-		this.oriType = value.getDataType_();
-		this.InputSpacingx = orisizex;
-		this.InputSpacingy = orisizey;
-		this.InputSpacingz = orisizez;
+	public void setSourceSize(double pixelSizeX, double pixelSizeY, double pixelSizeZ) {
+		this.InputSpacingx = pixelSizeX;
+		this.InputSpacingy = pixelSizeY;
+		this.InputSpacingz = pixelSizeZ;
 	}
 
-	public DataType getoriType() {
-		return this.oriType;
+	public void setSourceType(DataType type) {
+		this.oriType = type;
 	}
 
-	/**
-	 * One way to set the parameters used by @see ApplyTransformation. If input
-	 * was not a 4x4 matrix, then back to idendity matrix.
-	 * 
-	 * @param Transfo
-	 *            a Jama Matrix 4x4
-	 */
+	public void setTargetSequence(Sequence sequence) {
+		setTargetSize(sequence.getSizeX(), sequence.getSizeY(), sequence.getSizeZ(), sequence.getPixelSizeX(), sequence.getPixelSizeY(), sequence.getPixelSizeZ());
+	}
+
+	public void setTargetSize(Sequence sequence) {
+		setTargetSize(
+			sequence.getSizeX(),
+			sequence.getSizeY(),
+			sequence.getSizeZ(),
+			sequence.getPixelSizeX(),
+			sequence.getPixelSizeY(),
+			sequence.getPixelSizeZ()
+		);
+	}
+
+	public void setTargetSize(SequenceSize sequenceSize) {
+		setTargetSize(
+			sequenceSize.get(DimensionId.X).getSize(),
+			sequenceSize.get(DimensionId.Y).getSize(),
+			sequenceSize.get(DimensionId.Z).getSize(),
+			sequenceSize.get(DimensionId.X).getPixelSizeInNanometer(),
+			sequenceSize.get(DimensionId.Y).getPixelSizeInNanometer(),
+			sequenceSize.get(DimensionId.Z).getPixelSizeInNanometer()
+		);
+	}
+
+	public void setTargetSize(int sizeX, int sizeY, int sizeZ, double pixelSizeX, double pixelSizeY, double pixelSizeZ) {
+		this.extentx = sizeX - 1;
+		this.extenty = sizeY - 1;
+		this.extentz = sizeZ - 1;
+		this.spacingx = pixelSizeX;
+		this.spacingy = pixelSizeY;
+		this.spacingz = pixelSizeZ;
+	}
+
+	public void setRecenter(int recenter) {
+		this.recenter = recenter;
+	}
+
 	public void setParameters(Matrix Transfo) {
 		if (Transfo.getRowDimension() == 4) {
 			this.transfo3D = new vtkMatrix4x4();
@@ -97,33 +127,6 @@ public class Stack3DVTKTransformer implements Runnable, ImageTransformerInterfac
 				}
 			}
 		}
-	}
-
-	/**
-	 * 
-	 * @param w in voxel number
-	 * @param h
-	 * @param z
-	 * @param spacingx in um size of one voxel
-	 * @param spacingy
-	 * @param spacingz
-	 */
-	public void setDestinationsize(int w,int h,int z, double spacingx, double spacingy, double spacingz) {
-		this.extentx = w - 1;
-		this.extenty = h - 1;
-		this.extentz = z - 1;
-		this.spacingx = spacingx;
-		this.spacingy = spacingy;
-		this.spacingz = spacingz;
-	}
-
-	public void setDestinationsize(Sequence target) {
-		this.extentx = target.getSizeX() - 1;
-		this.extenty = target.getSizeY() - 1;
-		this.extentz = target.getSizeZ() - 1;
-		this.spacingx = target.getPixelSizeX();
-		this.spacingy = target.getPixelSizeY();
-		this.spacingz = target.getPixelSizeZ();
 	}
 
 	public void run() {
@@ -538,16 +541,5 @@ public class Stack3DVTKTransformer implements Runnable, ImageTransformerInterfac
 		}
 
 		imageData[posC] = newImageData;
-	}
-
-	public void setDestinationsize(int w,int h,int z, double spacingx, double spacingy, double spacingz, int recenter) {
-		this.extentx=w-1;
-		this.extenty=h-1;
-		this.extentz=z-1;
-		this.spacingx=spacingx;
-		this.spacingy=spacingy;
-		this.spacingz=spacingz;
-		this.recenter=recenter;
-
 	}
 }

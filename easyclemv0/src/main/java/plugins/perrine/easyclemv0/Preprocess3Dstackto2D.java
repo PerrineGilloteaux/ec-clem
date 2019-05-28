@@ -24,6 +24,7 @@ package plugins.perrine.easyclemv0;
 
 import icy.common.listener.ProgressListener;
 import icy.file.FileUtil;
+import icy.gui.dialog.MessageDialog;
 import icy.gui.frame.progress.ProgressFrame;
 import icy.gui.frame.progress.ToolTipFrame;
 import icy.image.IcyBufferedImage;
@@ -78,7 +79,12 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 
 	@Override
 	protected void execute() {
-		tobeprocessed=source.getValue();
+		if(source.getValue() == null) {
+			MessageDialog.showDialog("Source was closed. Please open one and try again");
+			throw new RuntimeException("Source was closed. Please open one and try again");
+		}
+
+		tobeprocessed = source.getValue();
 		int sizet= tobeprocessed.getSizeT();
 		int sizez= tobeprocessed.getSizeZ();
 		//Extract Channel if needed

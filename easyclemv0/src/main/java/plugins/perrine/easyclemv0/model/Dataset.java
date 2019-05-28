@@ -2,14 +2,26 @@ package plugins.perrine.easyclemv0.model;
 
 import Jama.Matrix;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
-
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class Dataset {
     private Matrix points;
     private int dimension;
     private int n;
     private Mean mean = new Mean();
+
+    public Dataset(int dimension) {
+        this.dimension = dimension;
+        this.n = 0;
+        points = new Matrix(n, dimension);
+    }
+
+    public Dataset(Matrix M) {
+        this.dimension = M.getColumnDimension();
+        this.n = M.getRowDimension();
+        points = M;
+    }
 
     public Dataset(List<Point> points) {
         n = points.size();
@@ -88,5 +100,25 @@ public class Dataset {
 
     public int getDimension() {
         return dimension;
+    }
+
+    public Point getPoint(int i) {
+        return new Point(points.getMatrix(i, i, 0, dimension - 1).transpose());
+    }
+
+    public Point removePoint(int i) {
+        Point toRemove = getPoint(i);
+        points = points.getMatrix(IntStream.range(0, n).filter((index) -> index != i).toArray(), 0, dimension - 1);
+        n = points.getRowDimension();
+        return toRemove;
+    }
+
+    public Dataset addPoint(Point point) {
+        Matrix M = new Matrix(n + 1, dimension);
+        M.setMatrix(0, n - 1, 0, dimension - 1, points);
+        M.setMatrix(n, n, 0, point.getDimension() - 1, point.getmatrix().transpose());
+        points = M;
+        n = points.getRowDimension();
+        return this;
     }
 }

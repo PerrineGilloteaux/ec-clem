@@ -18,72 +18,19 @@
  */
 package plugins.perrine.easyclemv0;
 
-import icy.gui.dialog.MessageDialog;
-
-import icy.plugin.PluginDescriptor;
 import icy.plugin.PluginLauncher;
 import icy.plugin.PluginLoader;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
 import javax.swing.JButton;
-
 import javax.swing.JPanel;
 
 public class GuiCLEMButtonApply extends JPanel {
 
 	private static final long serialVersionUID = 1L;
-	EasyCLEMv0 matiteclasse;
 
-	/**
-	 * Create the panel.
-	 */
-	public GuiCLEMButtonApply(EasyCLEMv0 matiteclasse) {
-		this.matiteclasse = matiteclasse;
-
-		JButton btnNewButton = new JButton(
-				"I want to apply a previously computed transfo  ");
-
-		btnNewButton
-				.setToolTipText("all transfo you were doing have been saved in a file named _transfo.xml");
-		btnNewButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-
-				if (GuiCLEMButtonApply.this.matiteclasse.source.getValue() != null) {
-					for (final PluginDescriptor pluginDescriptor : PluginLoader
-							.getPlugins()) {
-						// System.out.print(pluginDescriptor.getSimpleClassName());
-						// // output the name of the
-						// class.
-
-						// This part of the example check for a match in the
-						// name of the class
-						if (pluginDescriptor.getSimpleClassName()
-								.compareToIgnoreCase("ApplyTransformation") == 0) {
-							// System.out.print(" ==> Starting by looking at the name....");
-
-							// Create a new Runnable which contain the proper
-							// launcher
-
-							PluginLauncher.start(pluginDescriptor);
-							// ApplyTransformation APpliedtransfo = new
-							// ApplyTransformation();
-							// Matrix
-							// transfo=APpliedtransfo.getCombinedTransfo(APpliedtransfo.getdocumentTitle());
-
-						}
-					}
-				} else {
-					MessageDialog
-							.showDialog("Source was closed. Please open one and try again");
-				}
-			}
-
-		});
-
+	public GuiCLEMButtonApply() {
+		JButton btnNewButton = new JButton("I want to apply a previously computed transfo");
+		btnNewButton.setToolTipText("all transfo you were doing have been saved in a file named _transfo.xml");
+		btnNewButton.addActionListener(arg0 -> PluginLauncher.start(PluginLoader.getPlugin(ApplyTransformation.class.getName())));
 		add(btnNewButton);
-		// add(tooltip);
-
 	}
 }
