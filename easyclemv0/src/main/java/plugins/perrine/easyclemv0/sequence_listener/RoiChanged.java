@@ -11,22 +11,23 @@ import java.util.concurrent.Executors;
 
 public class RoiChanged implements SequenceListener {
 
-    private Sequence sequence;
     private WorkspaceState workspaceState;
     private WorkspaceTransformer workspaceTransformer;
 //    private CompletionService<Runnable> completionService = new ExecutorCompletionService<>(
 //        Executors.newSingleThreadExecutor()
 //    );
 
-    public RoiChanged(WorkspaceState workspaceState, WorkspaceTransformer workspaceTransformer, Sequence sequence) {
-        this.sequence = sequence;
+    public RoiChanged(WorkspaceState workspaceState, WorkspaceTransformer workspaceTransformer) {
         this.workspaceState = workspaceState;
         this.workspaceTransformer = workspaceTransformer;
     }
 
     @Override
     public void sequenceChanged(SequenceEvent event) {
-        if (workspaceState.isStopFlag()) {
+        if (
+            event.getSourceType() != SequenceEvent.SequenceEventSourceType.SEQUENCE_ROI ||
+                event.getType() != SequenceEvent.SequenceEventType.CHANGED
+        ) {
             return;
         }
 
@@ -34,12 +35,7 @@ public class RoiChanged implements SequenceListener {
             return;
         }
 
-        if (event.getSourceType() != SequenceEvent.SequenceEventSourceType.SEQUENCE_ROI) {
-            return;
-        }
-
-
-        if (event.getType() != SequenceEvent.SequenceEventType.CHANGED) {
+        if (workspaceState.isStopFlag()) {
             return;
         }
 
@@ -49,6 +45,7 @@ public class RoiChanged implements SequenceListener {
             workspaceTransformer.run();
 //            addListeners(event.getSequence(), eventSequenceListeners);
 //            addListeners(sequence, sequenceListeners);
+            workspaceState.setFlagReadyToMove(false);
             workspaceState.setDone(true);
         }
     }

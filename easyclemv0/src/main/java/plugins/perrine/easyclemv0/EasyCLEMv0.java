@@ -58,11 +58,10 @@ import plugins.perrine.easyclemv0.sequence_listener.RoiChanged;
 public class EasyCLEMv0 extends EzPlug implements EzStoppable {
 
 	private RoiProcessor roiProcessor = new RoiProcessor();
-	private MonitoringConfiguration monitoringConfiguration = new MonitoringConfiguration(false, false);
+//	private MonitoringConfiguration monitoringConfiguration = new MonitoringConfiguration(false, false);
 
 	private Workspace workspace;
 	private WorkspaceTransformer workspaceTransformer;
-	private WorkspaceState workspaceState;
 	private TREComputerFactory treComputerFactory = new TREComputerFactory();
 
 	private ActionListener actionbutton = new ActionListener() {
@@ -126,9 +125,9 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable {
 	private GuiCLEMButtons guiCLEMButtons;
 	private GuiCLEMButtons2 rigidspecificbutton;
 
-	public void setMonitoringConfiguration(MonitoringConfiguration monitoringConfiguration) {
-		this.monitoringConfiguration = monitoringConfiguration;
-	}
+//	public void setMonitoringConfiguration(MonitoringConfiguration monitoringConfiguration) {
+//		this.monitoringConfiguration = monitoringConfiguration;
+//	}
 
 	/**
 	 * Overlay surdefined for paint would happen at each paint: will make the
@@ -320,12 +319,12 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable {
 		);
 		guiCLEMButtons.setWorkspaceTransformer(workspaceTransformer);
 
-		RoiChanged roiChangedListener = new RoiChanged(workspaceState, workspaceTransformer, targetSequence);
-		sourceSequence.addListener(
-			roiChangedListener
-		);
+//		RoiChanged roiChangedListener = new RoiChanged(workspace.getWorkspaceState(), workspaceTransformer);
+//		sourceSequence.addListener(
+//			roiChangedListener
+//		);
 
-		RoiAdded roiAddedListener = new RoiAdded(sourceSequence, workspaceState);
+		RoiAdded roiAddedListener = new RoiAdded(sourceSequence, workspace.getWorkspaceState());
 		targetSequence.addListener(
 			roiAddedListener
 		);
@@ -350,11 +349,11 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable {
 		sourceSequence.setFilename(sourceSequence.getName() + ".tif");
 		new AnnounceFrame("Select point on image" + targetSequence.getName() + ", then drag it on source image and RIGHT CLICK", 5);
 
-		while (!workspaceState.isStopFlag()) {
+		while (!workspace.getWorkspaceState().isStopFlag()) {
 			ThreadUtil.sleep(10);
 		}
 
-		sourceSequence.removeListener(roiChangedListener);
+//		sourceSequence.removeListener(roiChangedListener);
 		targetSequence.removeListener(roiAddedListener);
 		System.out.println("Listeners off now");
 
@@ -392,7 +391,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable {
 
 	@Override
 	public void stopExecution() {
-		workspaceState.setStopFlag(true);
+		workspace.getWorkspaceState().setStopFlag(true);
 //		try {
 			choiceinputsection.setEnabled(true);
 			rigidspecificbutton.reshowspecificrigidbutton();

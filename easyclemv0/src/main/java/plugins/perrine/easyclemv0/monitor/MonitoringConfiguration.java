@@ -12,6 +12,7 @@ public class MonitoringConfiguration {
     public MonitoringConfiguration(boolean monitor, boolean waitfortarget) {
         this.monitor = monitor;
         this.waitfortarget = waitfortarget;
+        monitoringPoint = new Point(new double[] {0, 0});
     }
 
     public boolean isMonitor() {

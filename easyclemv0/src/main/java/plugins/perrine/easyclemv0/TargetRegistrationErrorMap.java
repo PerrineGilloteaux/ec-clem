@@ -32,7 +32,10 @@ import icy.type.point.Point5D;
 //import ij.plugin.filter.LutViewer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.*;
 
 
 //import plugins.kernel.roi.roi2d.ROI2DEllipse;
@@ -59,9 +62,13 @@ public class TargetRegistrationErrorMap implements Runnable {
     private IcyBufferedImage image;
 
     private RoiProcessor roiProcessor = new RoiProcessor();
-    private TREComputerFactory treComputerFactory = new TREComputerFactory();
+//    private TREComputerFactory treComputerFactory = new TREComputerFactory();
 
     private TREComputer treComputer;
+
+    private CompletionService<IcyBufferedImage> completionService = new ExecutorCompletionService<>(
+        Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
+    );
 
     public TargetRegistrationErrorMap(TREComputer treComputer) {
         this.treComputer = treComputer;
@@ -84,7 +91,7 @@ public class TargetRegistrationErrorMap implements Runnable {
 //        Dataset sourceDataset = ReadFiducials(this.sequence);
         //fiducial is read in nm
         myprogressbar = new ProgressFrame("EasyCLEM is computing Error Map");
-        myprogressbar.setLength(sequence.getSizeX() * sequence.getSizeY() * sequence.getSizeZ());
+        myprogressbar.setLength(sequence.getSizeZ());
         myprogressbar.setPosition(0);
         myprogressbar.setMessage("EasyCLEM was Precomputing Inertia Matrix done");
 
@@ -131,22 +138,36 @@ public class TargetRegistrationErrorMap implements Runnable {
             return null;
         }
 
-        Point point = new Point(new Matrix(new double[][] {{ 0 }, { 0 }, { 0 }}));
+        Map<Future<IcyBufferedImage>, Integer> resultMap = new HashMap<>();
+
         for (int z = 0; z < sequence.getSizeZ(); z++) {
-            float[] dataArray = new float[image.getSizeX() * image.getSizeY()];
-            for (int x = 0; x < image.getSizeX(); x++) {
-                for (int y = 0; y < image.getSizeY(); y++) {
-                    point.getmatrix().set(0, 0, x);
-                    point.getmatrix().set(1, 0, y);
-                    point.getmatrix().set(2, 0, z);
-                    dataArray[image.getOffset(x, y)] = (float) treComputer.getExpectedSquareTRE(point);
-                    myprogressbar.incPosition();
+            Point point = new Point(new Matrix(new double[][] {{ 0 }, { 0 }, { z }}));
+            resultMap.put(completionService.submit(() -> {
+                float[] dataArray = new float[image.getSizeX() * image.getSizeY()];
+
+                for (int x = 0; x < image.getSizeX(); x++) {
+                    for (int y = 0; y < image.getSizeY(); y++) {
+                        point.getmatrix().set(0, 0, x);
+                        point.getmatrix().set(1, 0, y);
+                        dataArray[image.getOffset(x, y)] = (float) treComputer.getExpectedSquareTRE(point);
+                    }
                 }
-            }
-            IcyBufferedImage imageResult = new IcyBufferedImage(sequence.getSizeX(), sequence.getSizeY(), dataArray);
-            newsequence.setImage(0, z, imageResult);
-            imageResult.getType();
+
+                return new IcyBufferedImage(sequence.getSizeX(), sequence.getSizeY(), dataArray);
+            }), z);
         }
+
+        while (!resultMap.isEmpty()) {
+            try {
+                Future<IcyBufferedImage> take = completionService.take();
+                int offset = resultMap.remove(take);
+                newsequence.setImage(0, offset, take.get());
+                myprogressbar.incPosition();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
         return newsequence;
     }
 

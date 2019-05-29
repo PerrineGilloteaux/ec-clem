@@ -4,6 +4,8 @@ import icy.gui.dialog.MessageDialog;
 import icy.gui.frame.progress.AnnounceFrame;
 import plugins.perrine.easyclemv0.TargetRegistrationErrorMap;
 import plugins.perrine.easyclemv0.error.TREComputer;
+import plugins.perrine.easyclemv0.factory.DatasetFactory;
+import plugins.perrine.easyclemv0.factory.TREComputerFactory;
 import plugins.perrine.easyclemv0.model.Workspace;
 
 import javax.swing.*;
@@ -12,18 +14,21 @@ public class ComputeErrorMapButton extends JButton {
 
     private Workspace workspace;
     private TREComputer treComputer;
+    private TREComputerFactory treComputerFactory = new TREComputerFactory();
+    private DatasetFactory datasetFactory = new DatasetFactory();
 
-    public void setWorkspace(Workspace workspace) {
-        this.workspace = workspace;
-    }
-
-    public ComputeErrorMapButton() {
+    public ComputeErrorMapButton(Workspace workspace) {
         super("Compute the whole predicted error map ");
         setToolTipText(" This will compute a new image were each pixel value stands for the statistical registration error (called Target Registration Error");
+        this.workspace = workspace;
         addActionListener((arg0) -> action());
     }
 
     private void action() {
+        treComputer = treComputerFactory.getFrom(
+            datasetFactory.getFrom(workspace.getSourceSequence()),
+            datasetFactory.getFrom(workspace.getTargetSequence())
+        );
         TargetRegistrationErrorMap myTREmap = new TargetRegistrationErrorMap(treComputer);
         if (workspace.getSourceSequence() != null) {
             if (workspace.getSourceSequence().getROIs().size() < 3) {

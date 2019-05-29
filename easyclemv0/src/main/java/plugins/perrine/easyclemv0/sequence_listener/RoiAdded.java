@@ -22,15 +22,14 @@ public class RoiAdded implements SequenceListener {
 
     @Override
     public void sequenceChanged(SequenceEvent event) {
+        if (
+            event.getSourceType() != SequenceEvent.SequenceEventSourceType.SEQUENCE_ROI ||
+                event.getType() != SequenceEvent.SequenceEventType.ADDED
+        ) {
+            return;
+        }
+
         if (workspaceState.isStopFlag()) {
-            return;
-        }
-
-        if (event.getSourceType() != SequenceEvent.SequenceEventSourceType.SEQUENCE_ROI) {
-            return;
-        }
-
-        if (event.getType() != SequenceEvent.SequenceEventType.ADDED) {
             return;
         }
 
@@ -69,10 +68,10 @@ public class RoiAdded implements SequenceListener {
         }
         System.out.println("Adding Roi Landmark " + event.getSequence().getROIs().size() + " on source");
         roisource.setName("Point " + event.getSequence().getROIs().size());
-        sequence.removeListener(this);
-        sequence.addROI(roisource);
         roisource.setStroke(9);
         roisource.setFocused(false);
+        sequence.removeListener(this);
+        sequence.addROI(roisource);
         workspaceState.setFlagReadyToMove(true);
         workspaceState.setDone(false);
     }

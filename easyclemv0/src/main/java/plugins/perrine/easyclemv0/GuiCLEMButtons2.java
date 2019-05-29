@@ -43,7 +43,7 @@ public class GuiCLEMButtons2 extends JPanel {
 
 	public GuiCLEMButtons2(Workspace workspace) {
 		this.workspace = workspace;
-		ComputeErrorMapButton computeErrorMapButton = new ComputeErrorMapButton();
+		ComputeErrorMapButton computeErrorMapButton = new ComputeErrorMapButton(workspace);
 		MonitorTargetPointButton btnNewButton5 = new MonitorTargetPointButton(workspace);
 		JCheckBox showerror = new ShowOverlayCheckbox(
 			workspace,
