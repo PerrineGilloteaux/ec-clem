@@ -5,3 +5,4 @@
  http://icy.bioimageanalysis.org/plugin/SmartMerge
 
 
+MIGRATION TO GITHUB https://github.com/anrcrocoval/
