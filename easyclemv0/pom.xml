@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Inherited Icy Parent POM -->
+    <parent>
+        <artifactId>pom-icy</artifactId>
+        <groupId>org.bioimageanalysis.icy</groupId>
+        <version>2.1.6</version>
+    </parent>
+ <!-- Project Information -->
+    
+  
+   
+    <artifactId>EasyCLEMv0</artifactId>
+    <version>1.1.0</version>
+   	<packaging>jar</packaging>
+
+   	
+
+	<name>Ec-CLEMv0</name>
+    <description>Legacy version of ecclem (named easyclemv0)</description>
+    <url>https://github.com/PerrineGilloteaux/ec-clem</url>
+    <inceptionYear>2016</inceptionYear>
+    
+     <organization>
+        <name>fr.univ-nantes.PerrineGilloteaux</name>
+        <url>https://github.com/PerrineGilloteaux</url>
+    </organization>
+    
+    <licenses>
+        <license>
+            <name>GNU GPLv3</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.en.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <developers>
+        <developer>
+            <id>PerrineGilloteaux</id>
+            <name>Perrine Paul-Gilloteaux</name>
+            <url>https://cv.archives-ouvertes.fr/perrine-paul-gilloteaux</url>
+            <roles>
+                <role>founder</role>
+                <role>lead</role>
+                <role>architect</role>
+                <role>developer</role>
+                <role>debugger</role>
+                <role>tester</role>
+                <role>maintainer</role>
+                <role>support</role>
+            </roles>
+	   </developer>
+
+        <developer>
+            <id>XHeiligenstein</id>
+            <name>Xavier Heiligenstein</name>
+            <roles>
+                <role>tester</role>
+           		<role>support</role>
+            </roles>
+        </developer>
+    </developers>
+    
+   
+   <!-- Project build configuration -->
+    <build>
+		<plugins>
+			<plugin>
+        		<groupId>org.apache.maven.plugins</groupId>
+        		<artifactId>maven-jar-plugin</artifactId>
+        		<configuration>
+          		<outputDirectory>${project.basedir}/lib/icy/plugins/perrine/easyclemv0</outputDirectory>
+        		</configuration>
+      		</plugin>
+     
+           
+           
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                
+                
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                        <minimizeJar>true</minimizeJar>
+                              <artifactSet>
+                				<excludes>
+                					<exclude>org.bioimageanalysis.icy:icy-*</exclude>
+                					<exclude>net.imagej:*</exclude>
+                					<exclude>org.bioimageanalysis.icy:protocols*</exclude>
+                					<exclude>org.bioimageanalysis.icy:ezplug*</exclude>
+                					<exclude>org.bioimageanalysis.icy:ezplug*</exclude>
+                					<exclude>org.bioimageanalysis.icy:color-bar*</exclude>
+                					<exclude>org.bioimageanalysis.icy:3d-mesh-roi*</exclude>
+                					<exclude>org.bioimageanalysis.icy:quickhull*</exclude>
+                					<exclude>org.bioimageanalysis.icy:vecmath*</exclude>
+                  					<exclude>fr.univ-nantes:tv*</exclude>
+                  					<exclude>fr.univ-nantes:corre*</exclude>
+                  					<exclude>javax.media:jai*</exclude>
+                  					<exclude>net.sf.ehcache:*</exclude>
+                  					<exclude>fr.univ-nantes:filtertool*</exclude>
+                					<exclude>gov.nist.math:*</exclude>
+                					<exclude>nativelibs4java*</exclude>
+                					<exclude>com.nativelibs4java</exclude>
+                					<exclude>org.testng:*</exclude>
+                					<exclude>org.jogamp.*</exclude>
+                					
+                					</excludes>
+              </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+           
+
+		</plugins>
+		      </build>
+   
+ <!-- List of project's dependencies -->
+    <dependencies>
+
+        <!-- The core of Icy -->
+        <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>icy-kernel</artifactId>
+            <version>${icy-kernel.version}</version>
+        </dependency>
+        <dependency>
+			<groupId>org.bioimageanalysis.icy</groupId>
+			<artifactId>icy-vtk</artifactId>
+			</dependency>
+        
+
+        <!-- The EzPlug library, simplifies writing UI for Icy plugins. -->
+        <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>ezplug</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>color-bar</artifactId>
+           
+        </dependency>
+       
+        
+    	
+        <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>filter-toolbox</artifactId>
+            
+        </dependency>
+        
+        <dependency>
+        	<groupId>fr.univ-nantes</groupId>
+        	<artifactId>tvdenoising</artifactId>
+        	<version>0.0.0</version>
+         </dependency>   
+         <dependency>
+         	<groupId>fr.univ-nantes</groupId>
+            <artifactId>correlativeview</artifactId>
+            <version>1.0.0.0</version> 
+         </dependency>              
+        <!--  
+        <dependency>
+            <groupId>fr.univ-nantes</groupId>
+            <artifactId>bioformats</artifactId>
+            <version>0.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.univ-nantes</groupId>
+            <artifactId>jogl</artifactId>
+            <version>0.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.univ-nantes</groupId>
+            <artifactId>jai</artifactId>
+            <version>0.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>fr.univ-nantes</groupId>
+            <artifactId>vtk</artifactId>
+            <version>0.0.0</version>
+        </dependency> -->
+        <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>3d-mesh-roi</artifactId>
+            </dependency>
+        <!-- <dependency>
+            <groupId>org.bioimageanalysis.icy</groupId>
+            <artifactId>quickhull</artifactId>
+            <version>1.0.2</version>
+        </dependency>-->
+
+      <dependency>
+            <groupId>gov.nist.math</groupId>
+            <artifactId>jama</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+        
+          <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.0.19</version>
+        </dependency>
+        
+        <!--  <dependency>
+            <groupId>net.imagej</groupId>
+            <artifactId>ij</artifactId>
+            <version>1.52n</version>__>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
+        </dependency> -->
+       <!-- <dependency>
+            <groupId>org.openmicroscopy</groupId>
+            <artifactId>ome-xml</artifactId>
+            <version>6.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openmicroscopy</groupId>
+            <artifactId>ome-common</artifactId>
+            <version>6.0.0</version>
+        </dependency>-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.7</version>
+        </dependency>
+       
+</dependencies>
+
+     <!-- Icy Maven repository (to find parent POM) -->
+    <repositories>
+        <repository>
+            <id>icy</id>
+            <name>Icy's Nexus</name>
+            <url>https://icy-nexus.pasteur.fr/repository/Icy/</url>
+        </repository>
+    </repositories>
+
+    
+</project>

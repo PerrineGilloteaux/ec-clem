@@ -557,7 +557,7 @@ return;
 					XMLUtil.setAttributeDoubleValue(transfoElement, "ix" , this.InputSpacingx );
 					XMLUtil.setAttributeDoubleValue(transfoElement, "iy" , this.InputSpacingy );
 					XMLUtil.setAttributeDoubleValue(transfoElement, "iz" , this.InputSpacingz  );
-					XMLUtil.setAttributeIntValue(transfoElement, "Npoints" , lmsource.GetNumberOfPoints()  );
+					XMLUtil.setAttributeIntValue(transfoElement, "Npoints" ,(int) lmsource.GetNumberOfPoints()  );
 					XMLUtil.setAttributeValue(transfoElement, "process_date",
 							new Date().toString());
 				for (int idx=0;idx<lmsource.GetNumberOfPoints();idx++){
@@ -618,7 +618,8 @@ public void setImageTargetandpoints(Sequence imageseq, double[][] sourcepoints) 
 	private vtkPoints createvtkpoints(double[][] points,double sizex,double sizey,double sizez) {
 		// points in pixels
 		vtkPoints mypoints=new vtkPoints();
-		mypoints.SetNumberOfPoints(points.length);
+		
+		mypoints.SetNumberOfPoints((int)points.length);
 		 for (int i=0;i<points.length;i++){
 			 mypoints.SetPoint(i,points[i][0]*sizex, points[i][1]*sizey, points[i][2]*sizez);
 		 }

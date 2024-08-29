@@ -318,7 +318,7 @@ public class GuiCLEMButtons extends JPanel {
 							maxorder=order;
 						// retire derniere ROI plus eliminer le node de la derniere transfo
 						//faire pareil en 3D
-						// puis appliquer la transfo pour remettre à jour
+						// puis appliquer la transfo pour remettre  a jour
 					}
 					//find element and remove it
 					for (Element transfoElement : transfoElementArrayList) {

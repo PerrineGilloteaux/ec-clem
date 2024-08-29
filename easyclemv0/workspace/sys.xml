@@ -1,0 +1,25 @@
+<root description="System workspace" name="sys">
+<task name="Plugins">
+<band name="Setup"/>
+<band name="New"/>
+<band name="Others">
+<item classname="plugins.perrine.easyclemv0.AdvancedEcClemOptions" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.ApplyTransformation" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.ApplyTransformationtoRoi" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.ApplyTransfotoScaledImage" priority="low"/>
+<item classname="plugins.stef.tools.overlay.ColorBar" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.ComputeLeaveOneOut" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.EasyCLEMv0" priority="low"/>
+<item classname="plugins.adufour.filtering.FilterToolbox" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.ImportRoiPointsFromFile" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.MonitorTargetPoint" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.MonteCarloTREstudy" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.MonteCarloTREStudy_Validation" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.Preprocess3Dstackto2D" priority="low"/>
+<item classname="plugins.adufour.protocols.Protocols" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.StudyLandmarksConfagainstN" priority="low"/>
+<item classname="plugins.perrine.easyclemv0.TransformBasedonCameraView" priority="low"/>
+<item classname="plugins.nchenouard.tvdenoising.TVDenoising" priority="low"/>
+</band>
+</task>
+</root>

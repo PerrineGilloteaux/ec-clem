@@ -155,6 +155,7 @@ public class TransformBasedonCameraView extends EzPlug {
 				this.InputSpacingy=this.sequence.getPixelSizeY();
 				this.InputSpacingz=this.sequence.getPixelSizeZ();
 				final DataType oriType = sequence.getDataType_();
+				try {
 				sequence2=SequenceUtil.getCopy(sequence);
 				
 				transformer = new Runnable() {
@@ -523,7 +524,10 @@ public class TransformBasedonCameraView extends EzPlug {
 				   
 				addSequence(sequence2);
 				  
-			}
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}}
 			else
 			{
 				MessageDialog.showDialog("Please switch to 3D view");

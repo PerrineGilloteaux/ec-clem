@@ -41,7 +41,7 @@ import plugins.kernel.roi.descriptor.measure.ROIMassCenterDescriptorsPlugin;
 //import icy.main.Icy;
 //import icy.math.Scaler;
 import plugins.stef.tools.overlay.ColorBarOverlay;
-/** author: Perrine.paul-gilloteaux@curie.fr
+/** author: Perrine.paul-gilloteaux@univ-nantes.fr
 * purpose: Compute TRE in each image points from FLE fiducial localisation error
 * 
 */  
@@ -265,7 +265,7 @@ public class TargetRegistrationErrorMap implements Runnable {
 		// principal axis k of fiducials; and fk mean of square distances of the
 		// fiducials from that axis.
 		// ICI !!!!
-		// + penser à recopier et verifier le type pour les points x (cf array
+		// + penser a recopier et verifier le type pour les points x (cf array
 		// http://icy.bioimageanalysis.org/index.php?display=javaCourse Final
 		// MY points are in pixels!!
 		// TRE=((1/N)+(1/3)*sum(d./f))*FLEsqrexp;
@@ -540,7 +540,13 @@ void ReadFiducials(double[][] points, Sequence seq)	{
 			// {
 			i++;
 
-			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			Point5D p3D = null;
+			try {
+				p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
 				p3D = roi.getPosition5D();
 			if (Double.isNaN(p3D.getX()))
