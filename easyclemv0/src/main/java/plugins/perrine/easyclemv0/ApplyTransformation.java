@@ -304,6 +304,7 @@ public class ApplyTransformation extends EzPlug implements Block{
 		int nbt = source.getValue().getSizeT();
 
 		DataType datatype =  source.getValue().getDataType_(); 
+		try {
 		Sequence  sequence2=SequenceUtil.getCopy(source.getValue()); 
 		sequence2.beginUpdate();
 		sequence2.removeAllImages(); 
@@ -549,6 +550,7 @@ public class ApplyTransformation extends EzPlug implements Block{
 
 			sequence2.endUpdate();
 		}
+	
 		// display the sequence
 
 		if (!this.isHeadLess()) //called in Block protocol
@@ -562,7 +564,10 @@ public class ApplyTransformation extends EzPlug implements Block{
 			out.setValue(sequence2);
 
 		System.out.println("have been applied"); 
-
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 
 	}
 	

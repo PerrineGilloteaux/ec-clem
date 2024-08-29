@@ -36,7 +36,7 @@ import icy.type.collection.array.Array1DUtil;
  *
  *         This class ImageTransformer is part of EasyClem but could be used as
  *         a library. In this beta version, it makes use of Graphics2D This one was created
- *         during Icy coding party, with the help of Stéphane and Fabrice 2D!
+ *         during Icy coding party, with the help of Stephane and Fabrice 2D!
  *         
  *         23/07/2018: update for better range conservation.
  *         tested with 
@@ -145,7 +145,10 @@ public class ImageTransformer implements Runnable {
 		//
 		int nbt = sequence.getSizeT();
 		int nbz = sequence.getSizeZ();
+		try {
 		Sequence newseq = SequenceUtil.getCopy(sequence);
+		
+		
 		sequence.beginUpdate();
 		sequence.removeAllImages();
 		ProgressFrame progress = new ProgressFrame("Applying the transformation...");
@@ -174,7 +177,10 @@ public class ImageTransformer implements Runnable {
 		}
 		progress.close();
 		System.out.println("have been aplied");
-
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 
 	private IcyBufferedImage transformIcyImage(Sequence seq, int t, int z) {
@@ -225,7 +231,13 @@ public class ImageTransformer implements Runnable {
 			}
 			else{
 			//image = IcyBufferedImageUtil.getARGBImage(imagetobemodified.getImage(c));
+				try {
 				image=IcyBufferedImageUtil.toBufferedImage(imagetobemodified.getImage(c), BufferedImage.TYPE_INT_ARGB);
+				
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			}
 			imageDest = new BufferedImage(imagetobekept.getWidth(), imagetobekept.getHeight(),
 					BufferedImage.TYPE_INT_ARGB);
@@ -247,7 +259,7 @@ public class ImageTransformer implements Runnable {
 			// false);// rescale for now intensity
 			//Scaler scaler = new Scaler(boundsSrc[0], boundsSrc[1],
 			//		boundsDst[0], boundsDst[1], false);
-			// ICI: se debrouiller pour que l'instensité reste la meme qu'avant
+			// ICI: se debrouiller pour que l'instensitï¿½ reste la meme qu'avant
 			//icyImage = IcyBufferedImageUtil.convertToType(icyImage, oriType,
 					//scaler);
 			if (imagetobemodified.getImage(c).getDataType_().getBitSize()==16){	

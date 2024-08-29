@@ -19,7 +19,7 @@ package plugins.perrine.easyclemv0;
  * or non rig transformation based on monteCarlo Simulation to mimick the Fiducial localisation error
  * TODO implement  the 3D config. started
  * Added the comparison with thin plate spline transform (leave one out discrepancy)
- * TODO toujours le bug sur alpha: corriger roi2D en 3D des le début...
+ * TODO toujours le bug sur alpha: corriger roi2D en 3D des le debut
  *  
  */
 
@@ -211,6 +211,7 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 			new AnnounceFrame("Open an image with Rois on it first !!!");
 			return;
 		}
+		try {
 		target = SequenceUtil.getCopy(sourceseq);
 		Icy.getMainInterface().addSequence(target);
 		// Prepare ROI:
@@ -472,6 +473,10 @@ public class MonteCarloTREStudy_Validation extends EzPlug implements EzStoppable
 	    mainFrame.requestFocus();
 	    WhiskerPlot(dataset2);//}});
 	    myprogressbar.close();
+	} catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 	}
 private void WhiskerPlot(DefaultBoxAndWhiskerCategoryDataset dataset2) {
 		

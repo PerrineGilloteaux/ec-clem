@@ -219,7 +219,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 				for (ROI roi : listfiducials) {
 
 					// @SuppressWarnings("deprecation")
-					Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+					Point5D p3D = null;
+					try {
+						p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					if (Double.isNaN(p3D.getX()))
 						p3D = roi.getPosition5D(); // some Roi does not have
 													// gravity
@@ -376,7 +382,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 				for (ROI roi : listfiducials) {
 
-					Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+					Point5D p3D = null;
+					try {
+						p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					if (Double.isNaN(p3D.getX()))
 						p3D = roi.getPosition5D(); // some Roi does not have
 													// gravity
@@ -717,7 +729,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		int i = -1;
 		for (ROI roi : listfiducials) {
 			i++;
-			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			Point5D p3D = null;
+			try {
+				p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
 				p3D = roi.getPosition5D();
 			if (Double.isNaN(p3D.getX()))
@@ -771,7 +789,13 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 		for (ROI roi : listfiducials) {
 			i++;
-			Point5D p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			Point5D p3D = null;
+			try {
+				p3D = ROIMassCenterDescriptorsPlugin.computeMassCenter(roi);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			if (roi.getClassName() == "plugins.kernel.roi.roi3d.ROI3DPoint")
 				p3D = roi.getPosition5D();
 
@@ -877,6 +901,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 			// targetseq.convertToType(DataType.UBYTE, true);
 			Sequence tmp = null;
 			if (sourceseq.getDataType_().getBitSize() != 8) {
+				try {
 				tmp = SequenceUtil.convertToType(sourceseq, DataType.UBYTE, true);
 				sourceseq.beginUpdate();
 				sourceseq.removeAllImages();
@@ -898,10 +923,18 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 
 					// sequence.
 				}
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			if (targetseq.getDataType_().getBitSize() != 8) {
-
+				try {
 				tmp = SequenceUtil.convertToType(targetseq, DataType.UBYTE, true);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				targetseq.beginUpdate();
 				targetseq.removeAllImages();
 				try {
@@ -945,8 +978,12 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		if (sourceseq == null)
 			return;
 		// sourceseq.getFirstViewer().getLutViewer().setAutoBound(false);
-
+		try {
 		backupsource = SequenceUtil.getCopy(sourceseq);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		bucalibx = backupsource.getPixelSizeX();
 		bucaliby = backupsource.getPixelSizeY();
 		bucalibz = backupsource.getPixelSizeZ();
@@ -1830,6 +1867,7 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 						Result2 = SequenceUtil.extractFrame(Result2, target.getValue().getFirstViewer().getPositionT());
 						Result2.dataChanged();
 						// Viewer Result2v=new Viewer(Result2); //
+						try {
 						if (Result1.getDataType_() != Result2.getDataType_())
 							Result2 = SequenceUtil.convertToType(Result2, Result1.getDataType_(), true); // warning:
 																											// bug
@@ -1846,15 +1884,29 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 																											// ok
 																											// here
 						Result2.dataChanged();
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						// Viewer Result3v=new Viewer(Result2); //
 						// Result2v.getLut().copyFrom(targetlut);
 						// Result2v.close();
 
 						Sequence[] sequences = new Sequence[Result1.getSizeC()+Result2.getSizeC()];
+						try {
 						for (int c=0;c<Result1.getSizeC();c++)
 							sequences[c]=SequenceUtil.extractChannel(Result1, c);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						try {
 						for (int c=Result1.getSizeC();c<Result1.getSizeC()+Result2.getSizeC();c++)
 							sequences[c]=SequenceUtil.extractChannel(Result2, c-Result1.getSizeC());
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						boolean fillEmpty=false;
 						boolean rescale=false;
 						int[] channels=new int[sequences.length];
@@ -2105,4 +2157,24 @@ public class EasyCLEMv0 extends EzPlug implements EzStoppable, SequenceListener 
 		return check; // error was never above predicted error
 
 	}
+	
+	/**
+     * Only for test purpose.
+     */
+    public static void main(final String[] args) {
+        // Launch the application.
+        Icy.main(args);
+
+        /*
+         * Programmatically launch a plugin, as if the user had clicked its
+         * button.
+         */
+        
+        PluginLauncher.start(PluginLoader.getPlugin(EasyCLEMv0.class.getName()));
+    }
+
 }
+
+
+
+

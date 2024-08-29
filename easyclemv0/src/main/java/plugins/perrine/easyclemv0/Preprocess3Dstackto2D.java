@@ -92,6 +92,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			}
 			String extractedchannelname =tobeprocessed.getChannelName(indc);
 			tobeprocessed.beginUpdate();
+			try {
 			try{
 			Sequence channelextracted=SequenceUtil.extractChannel(tobeprocessed,indc);
 			
@@ -113,9 +114,13 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " ("+extractedchannelname+")");
 			tobeprocessed.setName(tobeprocessed.getName()+" ("+extractedchannelname+")");
 			}
-
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		// Apply denoising if asked
+		try {
 		if (denoise.getValue()==true){
 			int nbchannel=tobeprocessed.getSizeC();
 			
@@ -149,6 +154,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
             finally{
             	tobeprocessed.endUpdate();
             }
+            
             Sequence duplicate2=SequenceUtil.getCopy(tobeprocessed);
 			tobeprocessed.beginUpdate();
 			//Sequence denoised=new Sequence();
@@ -196,7 +202,10 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			tobeprocessed.setName(tobeprocessed.getName()+ " (denoised)");
 			}
 		}
-
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 			
 
 		
@@ -207,6 +216,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 							&& (flatten.getValue() == true))
 		{
 			tobeprocessed.removeAllROI();
+			try {
 			Sequence duplicate=SequenceUtil.getCopy(tobeprocessed);
 			boolean max=true;
 			tobeprocessed.removeAllImages();
@@ -225,6 +235,10 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (max projection)");
 			tobeprocessed.setName(tobeprocessed.getName()+ " (max projection)");
 			}
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		// apply MIN flatening method if asked 
@@ -232,7 +246,9 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 									&& (flatten.getValue() == true))
 				{
 					tobeprocessed.removeAllROI();
+					try {
 					Sequence duplicate=SequenceUtil.getCopy(tobeprocessed);
+					
 					boolean max=false;
 					tobeprocessed.removeAllImages();
 					tobeprocessed.beginUpdate();
@@ -249,6 +265,10 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 					tobeprocessed.endUpdate();
 					tobeprocessed.setFilename(tobeprocessed.getFilename()+ " (min projection)");
 					tobeprocessed.setName(tobeprocessed.getName()+ " (min projection)");
+					}
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 				
@@ -276,6 +296,7 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			progress.setPosition(0.2);
 			tobeprocessed.removeAllROI();
 			Sequence[] arrayofimage= new Sequence[tobeprocessed.getSizeC()];
+			try {
 			for (int c=0; c<tobeprocessed.getSizeC(); c++){
 			ImagePlus test = ImageJUtil.convertToImageJImage(SequenceUtil.extractChannel(tobeprocessed, c),
 					new ProgressListener() {
@@ -366,6 +387,10 @@ public class Preprocess3Dstackto2D extends EzPlug  {
 			Sequence tmpnew= new Sequence(test2.getImage(0, 0));
 			arrayofimage[c]=tmpnew;
 			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 			tobeprocessed.beginUpdate();
 			tobeprocessed.removeAllImages();
 			
